@@ -1,0 +1,53 @@
+.wrap {
+  padding: 32rpx;
+  padding-bottom: 120rpx;
+}
+
+.center {
+  text-align: center;
+  padding: 40rpx;
+}
+
+.tag {
+  display: inline-block;
+  margin-top: 16rpx;
+  padding: 6rpx 16rpx;
+  background: #e0f2fe;
+  color: #0060a9;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+}
+
+.section-title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.product-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #e2e8f0;
+}
+
+.product-name {
+  flex: 1;
+  padding-right: 16rpx;
+}
+
+.item-row {
+  padding: 12rpx 0;
+  font-size: 26rpx;
+}
+
+.error {
+  color: #dc2626;
+  text-align: center;
+  margin-top: 16rpx;
+}
+
+.share {
+  margin-top: 24rpx;
+}

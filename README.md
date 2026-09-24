@@ -1,98 +1,53 @@
-# SamGo - 山姆超市拼单
+# SamGo - 山姆拼单（微信小程序）
 
-基于 Next.js + Supabase 的全栈山姆超市拼单应用。支持发起拼单、加入拼单、从商品库选购、自定义商品、拼单状态管理等核心功能。
-
-## 功能特性
-
-- **用户认证** — 邮箱注册/登录（Supabase Auth）
-- **发起拼单** — 设置标题、取货地址、截止时间、最低人数
-- **加入拼单** — 浏览进行中的拼单，一键加入
-- **商品选购** — 从预置山姆商品库选择，或自定义商品
-- **拼单管理** — 发起人可截止/完成拼单，查看每人选购清单和金额
-- **个人中心** — 管理昵称、手机号
-
-## 技术栈
-
-- **框架**: Next.js 16 (App Router, Server Actions)
-- **数据库**: Supabase (PostgreSQL + Auth + RLS)
-- **样式**: Tailwind CSS 4
-- **语言**: TypeScript
+Next.js 提供微信登录等 API，拼单数据在 Supabase；客户端为 `miniprogram/` 微信小程序。
 
 ## 快速开始
 
-### 1. 创建 Supabase 项目
+### 1. Supabase
 
-1. 前往 [supabase.com](https://supabase.com) 创建新项目
-2. 在 SQL Editor 中执行 `supabase/migrations/001_initial_schema.sql`
-3. 在 Settings → API 中获取 Project URL 和 anon key
+在 SQL Editor 按顺序执行（若尚未初始化）：
 
-### 2. 配置环境变量
+- `supabase/migrations/001_initial_schema.sql`
+- `supabase/migrations/002_wechat_openid.sql`
+- `supabase/migrations/004_drop_profile_trigger.sql`（若 Auth 建用户报 Database error）
+
+### 2. 环境变量
 
 ```bash
 cp .env.example .env.local
 ```
 
-编辑 `.env.local`，填入 Supabase 凭证：
+填写 Supabase、微信小程序与 `WECHAT_AUTH_SECRET`（见 `.env.example`）。
 
-```
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-```
-
-### 3. 启动开发服务器
+### 3. 后端 API
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)
+默认 `http://localhost:3000`，小程序 `config.js` 中 `apiBase` 指向该地址。
+
+### 4. 小程序
+
+见 [miniprogram/README.md](./miniprogram/README.md)。
 
 ## 项目结构
 
 ```
-src/
-├── app/
-│   ├── actions/        # Server Actions (认证、拼单)
-│   ├── login/          # 登录/注册页
-│   ├── orders/
-│   │   ├── new/        # 发起拼单
-│   │   └── [id]/       # 拼单详情
-│   ├── profile/        # 个人中心
-│   └── page.tsx        # 首页（拼单列表）
-├── components/
-│   ├── ui/             # 基础 UI 组件
-│   ├── navbar.tsx
-│   ├── order-card.tsx
-│   ├── order-detail.tsx
-│   └── add-item-form.tsx
-├── lib/
-│   ├── supabase/       # Supabase 客户端
-│   └── utils.ts
-└── types/
-    └── database.ts     # 类型定义
-supabase/
-└── migrations/         # 数据库迁移
+src/app/api/wechat/login/   # 微信 code → Supabase session
+src/lib/wechat-auth.ts
+src/lib/supabase/admin.ts
+miniprogram/                # 微信小程序
+supabase/migrations/
+scripts/apply-supabase-migration.mjs
 ```
-
-## 数据库表
-
-| 表名 | 说明 |
-|------|------|
-| `profiles` | 用户资料 |
-| `group_orders` | 拼单活动 |
-| `products` | 山姆商品库 |
-| `participants` | 拼单参与者 |
-| `order_items` | 用户选购项 |
 
 ## 部署
 
-推荐部署到 [Vercel](https://vercel.com)，在项目设置中添加环境变量即可。
+将 Next 部署到 HTTPS（如 Vercel），配置与 `.env.local` 相同的环境变量；小程序 `apiBase` 改为生产域名，并在微信公众平台配置 request 合法域名。
 
 ```bash
-npm run build
+pnpm build
 ```
-
-## License
-
-MIT

@@ -2,15 +2,16 @@ const { getSession, clearSession } = require("../../utils/auth");
 const { fetchOpenOrders } = require("../../utils/supabase");
 
 const STATUS_LABEL = {
-  open: "进行中",
-  closing: "即将截止",
-  closed: "已截止",
-  completed: "已完成",
+  open: "\u8fdb\u884c\u4e2d",
+  closing: "\u5373\u5c06\u622a\u6b62",
+  closed: "\u5df2\u622a\u6b62",
+  completed: "\u5df2\u5b8c\u6210",
 };
 
 Page({
   data: {
     user: null,
+    isLeader: false,
     orders: [],
     loading: true,
     error: "",
@@ -22,7 +23,10 @@ Page({
       wx.redirectTo({ url: "/pages/login/login" });
       return;
     }
-    this.setData({ user: session.user });
+    this.setData({
+      user: session.user,
+      isLeader: Boolean(session.is_leader),
+    });
     this.loadOrders();
   },
 
@@ -39,10 +43,20 @@ Page({
       this.setData({ orders, loading: false });
     } catch (err) {
       this.setData({
-        error: err.message || "加载失败",
+        error: err.message || "\u52a0\u8f7d\u5931\u8d25",
         loading: false,
       });
     }
+  },
+
+  onCreate() {
+    wx.navigateTo({ url: "/pages/create/create" });
+  },
+
+  onOrderTap(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    wx.navigateTo({ url: `/pages/order/detail?id=${id}` });
   },
 
   onLogout() {

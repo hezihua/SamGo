@@ -29,6 +29,10 @@
   color: #dc2626;
 }
 
+.fab {
+  margin-top: 16rpx;
+}
+
 .logout {
   margin-top: 32rpx;
   color: #64748b;

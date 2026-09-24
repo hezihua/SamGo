@@ -106,17 +106,24 @@ export async function signInWithWechatOpenId(
         const retry = await auth.auth.signInWithPassword({ email, password });
         sessionData = retry.data;
         signInError = retry.error;
+      } else if (
+        /database error (creating|saving) new user/i.test(createError.message)
+      ) {
+        throw new Error(
+          "Supabase 用户触发器异常：请在 SQL Editor 执行 supabase/migrations/004_drop_profile_trigger.sql",
+        );
       } else {
         throw new Error(createError.message);
       }
     } else if (created.user) {
-      await admin
-        .from("profiles")
-        .update({
+      await admin.from("profiles").upsert(
+        {
+          id: created.user.id,
           wechat_openid: openid,
           nickname: displayName,
-        })
-        .eq("id", created.user.id);
+        },
+        { onConflict: "id" },
+      );
 
       const signedIn = await auth.auth.signInWithPassword({ email, password });
       sessionData = signedIn.data;
@@ -130,13 +137,14 @@ export async function signInWithWechatOpenId(
 
   const userId = sessionData.user!.id;
 
-  await admin
-    .from("profiles")
-    .update({
+  await admin.from("profiles").upsert(
+    {
+      id: userId,
       wechat_openid: openid,
-      ...(nickname?.trim() ? { nickname: displayName } : {}),
-    })
-    .eq("id", userId);
+      nickname: displayName,
+    },
+    { onConflict: "id" },
+  );
 
   const { data: profile } = await admin
     .from("profiles")

@@ -40,6 +40,7 @@ function loginWithWechat(nickname) {
               refresh_token: res.data.refresh_token,
               expires_at: res.data.expires_at,
               user: res.data.user,
+              is_leader: Boolean(res.data.is_leader),
             };
             setSession(session);
             resolve(session);

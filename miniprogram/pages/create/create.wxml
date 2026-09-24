@@ -1,0 +1,47 @@
+<view class="wrap">
+  <view class="card">
+    <text class="label">拼单标题</text>
+    <input
+      class="input"
+      placeholder="例如：周六山姆瑞士卷"
+      value="{{title}}"
+      bindinput="onTitleInput"
+    />
+
+    <text class="label">取货地址</text>
+    <input
+      class="input"
+      placeholder="小区/门店/约定地点"
+      value="{{deliveryAddress}}"
+      bindinput="onAddressInput"
+    />
+
+    <text class="label">截止日期</text>
+    <picker mode="date" value="{{date}}" start="{{today}}" bindchange="onDateChange">
+      <view class="picker">{{date || '请选择日期'}}</view>
+    </picker>
+
+    <text class="label">截止时间</text>
+    <picker mode="time" value="{{time}}" bindchange="onTimeChange">
+      <view class="picker">{{time}}</view>
+    </picker>
+
+    <text class="label">最少人数</text>
+    <input
+      class="input"
+      type="number"
+      value="{{minParticipants}}"
+      bindinput="onMinInput"
+    />
+  </view>
+
+  <button
+    class="btn-primary submit"
+    loading="{{loading}}"
+    disabled="{{loading}}"
+    bindtap="onSubmit"
+  >
+    发布拼单
+  </button>
+  <text class="error" wx:if="{{error}}">{{error}}</text>
+</view>

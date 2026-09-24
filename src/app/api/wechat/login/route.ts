@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isLeaderOpenId } from "@/lib/leader";
 import {
   exchangeWechatCode,
   signInWithWechatOpenId,
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
       expires_in: session.expires_in,
       token_type: session.token_type,
       user,
+      is_leader: isLeaderOpenId(openid),
     });
   } catch (err) {
     const message =

@@ -39,7 +39,26 @@ function fetchOpenOrders() {
   );
 }
 
+function createGroupOrder(fields) {
+  return rest("group_orders", {
+    method: "POST",
+    body: fields,
+  });
+}
+
+function joinGroupOrder(groupOrderId, userId) {
+  return rest("participants", {
+    method: "POST",
+    body: {
+      group_order_id: groupOrderId,
+      user_id: userId,
+    },
+  });
+}
+
 module.exports = {
   rest,
   fetchOpenOrders,
+  createGroupOrder,
+  joinGroupOrder,
 };

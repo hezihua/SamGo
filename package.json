@@ -6,28 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:apply:003": "node scripts/apply-supabase-migration.mjs supabase/migrations/003_fix_handle_new_user.sql",
+    "db:apply:004": "node scripts/apply-supabase-migration.mjs supabase/migrations/004_drop_profile_trigger.sql"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.4.0",
-    "lucide-react": "^1.21.0",
+    "ali-oss": "^6.23.0",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "tailwind-merge": "^3.6.0"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@types/ali-oss": "^6.23.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
-    "tailwindcss": "^4",
+    "pg": "^8.23.0",
     "typescript": "^5"
   }
 }

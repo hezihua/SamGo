@@ -40,6 +40,9 @@ miniprogram/config.js
 # vercel
 .vercel
 
+# supabase cli
+supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
