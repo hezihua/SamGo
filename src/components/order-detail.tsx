@@ -5,6 +5,12 @@ import { AddItemForm } from "@/components/add-item-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OrderShareActions } from "@/components/order-share-actions";
+import { isOrderLocked } from "@/lib/group-order";
+import {
+  aggregateByProduct,
+  aggregateByPerson,
+} from "@/lib/order-summary";
 import { formatDate, formatPrice } from "@/lib/utils";
 import {
   ORDER_STATUS_LABELS,
@@ -34,6 +40,7 @@ interface OrderDetailProps {
   currentUserId: string | null;
   isParticipant: boolean;
   isCreator: boolean;
+  shareBaseUrl?: string;
 }
 
 export function OrderDetail({
@@ -45,10 +52,19 @@ export function OrderDetail({
   currentUserId,
   isParticipant,
   isCreator,
+  shareBaseUrl,
 }: OrderDetailProps) {
   const [joining, setJoining] = useState(false);
+  const locked = isOrderLocked(order);
   const isClosed = order.status === "closed" || order.status === "completed";
-  const canAddItems = isParticipant && !isClosed;
+  const canAddItems = isParticipant && !locked;
+  const pastDeadline =
+    !isClosed &&
+    locked &&
+    new Date(order.deadline).getTime() < Date.now();
+
+  const byProduct = aggregateByProduct(items);
+  const byPerson = aggregateByPerson(items);
 
   const totalAmount = items.reduce(
     (sum, item) => sum + Number(item.product_price) * item.quantity,
@@ -111,7 +127,7 @@ export function OrderDetail({
               )}
             </div>
 
-            {isCreator && !isClosed && (
+            {isCreator && !locked && (
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
@@ -162,6 +178,18 @@ export function OrderDetail({
             </p>
           )}
 
+          {pastDeadline && (
+            <p className="mt-4 rounded-lg border border-sams-gray-200 bg-sams-gray-100 p-3 text-sm text-sams-gray-700">
+              已过截止时间，清单已锁定。发起人可在上方点击「截止拼单」标记本期结束。
+            </p>
+          )}
+
+          {locked && !pastDeadline && isClosed && (
+            <p className="mt-4 rounded-lg border border-sams-gray-200 bg-sams-gray-100 p-3 text-sm text-sams-gray-700">
+              本期已截止，清单不可再修改。可复制下方汇总发群核对。
+            </p>
+          )}
+
           <div className="mt-6 flex items-center justify-between rounded-lg bg-sams-blue/5 p-4">
             <span className="text-sm text-sams-gray-600">拼单总金额</span>
             <span className="text-2xl font-bold text-sams-blue">
@@ -170,6 +198,14 @@ export function OrderDetail({
           </div>
         </CardContent>
       </Card>
+
+      <div className="hidden sm:block">
+        <OrderShareActions
+          order={order}
+          items={items}
+          shareBaseUrl={shareBaseUrl}
+        />
+      </div>
 
       {!currentUserId && (
         <Card>
@@ -182,7 +218,7 @@ export function OrderDetail({
         </Card>
       )}
 
-      {currentUserId && !isParticipant && !isClosed && (
+      {currentUserId && !isParticipant && !locked && (
         <Card>
           <CardContent className="p-6 flex items-center justify-between">
             <p className="text-sams-gray-600">加入拼单，选购你想要的商品</p>
@@ -203,7 +239,7 @@ export function OrderDetail({
             <AddItemForm
               orderId={order.id}
               products={products}
-              disabled={isClosed}
+              disabled={locked}
             />
           </CardContent>
         </Card>
@@ -232,6 +268,35 @@ export function OrderDetail({
           </div>
         </CardContent>
       </Card>
+
+      {(byProduct.length > 0 || locked) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>采购汇总</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {byProduct.length === 0 ? (
+              <p className="text-center text-sm text-sams-gray-500 py-4">
+                暂无商品
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {byProduct.map((p) => (
+                  <li
+                    key={`${p.name}-${p.unitPrice}`}
+                    className="flex items-center justify-between rounded-lg bg-sams-gray-50 px-3 py-2.5 text-sm min-h-11"
+                  >
+                    <span className="text-sams-gray-900">{p.name}</span>
+                    <span className="font-medium text-sams-gray-700">
+                      ×{p.quantity}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -278,7 +343,7 @@ export function OrderDetail({
                             Number(item.product_price) * item.quantity
                           )}
                         </span>
-                        {currentUserId === item.user_id && !isClosed && (
+                        {currentUserId === item.user_id && !locked && (
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(item.id)}
@@ -296,6 +361,36 @@ export function OrderDetail({
           )}
         </CardContent>
       </Card>
+
+      {byPerson.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>每人应付</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {byPerson.map((p) => (
+              <div
+                key={p.userId}
+                className="flex items-center justify-between rounded-lg border border-sams-gray-100 px-3 py-3 min-h-11"
+              >
+                <span className="font-medium text-sams-gray-900">
+                  {p.nickname}
+                </span>
+                <span className="text-lg font-semibold text-sams-blue">
+                  {formatPrice(p.total)}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <OrderShareActions
+        order={order}
+        items={items}
+        shareBaseUrl={shareBaseUrl}
+        compact
+      />
     </div>
   );
 }

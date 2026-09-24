@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   description: "和朋友一起拼单买山姆好物，瑞士卷、牛肉卷、烤鸡… 省钱又方便",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{

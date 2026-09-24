@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { assertOrderEditable } from "@/lib/order-guard";
 import { createClient } from "@/lib/supabase/server";
 
 export async function createGroupOrder(formData: FormData) {
@@ -59,6 +60,8 @@ export async function joinGroupOrder(orderId: string) {
     redirect("/login");
   }
 
+  await assertOrderEditable(supabase, orderId);
+
   const { error } = await supabase.from("participants").insert({
     group_order_id: orderId,
     user_id: user.id,
@@ -82,6 +85,9 @@ export async function addOrderItem(formData: FormData) {
   }
 
   const group_order_id = formData.get("group_order_id") as string;
+
+  await assertOrderEditable(supabase, group_order_id);
+
   const product_name = formData.get("product_name") as string;
   const product_price = parseFloat(formData.get("product_price") as string);
   const quantity = parseInt(formData.get("quantity") as string) || 1;
@@ -112,6 +118,8 @@ export async function removeOrderItem(itemId: string, orderId: string) {
   if (!user) {
     redirect("/login");
   }
+
+  await assertOrderEditable(supabase, orderId);
 
   const { error } = await supabase
     .from("order_items")

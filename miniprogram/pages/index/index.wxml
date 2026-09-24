@@ -1,0 +1,22 @@
+<view class="wrap">
+  <view class="card">
+    <text class="title">你好，{{user.nickname || '拼友'}}</text>
+    <text class="muted">进行中的拼单</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="muted center">加载中…</view>
+  <view wx:elif="{{error}}" class="error center">{{error}}</view>
+  <view wx:elif="{{orders.length === 0}}" class="card center muted">
+    暂无进行中的拼单
+  </view>
+  <block wx:else>
+    <view class="card order" wx:for="{{orders}}" wx:key="id">
+      <text class="order-title">{{item.title}}</text>
+      <text class="muted">截止 {{item.deadline}}</text>
+      <text class="muted">取货 {{item.delivery_address}}</text>
+      <text class="tag">{{item.statusLabel}}</text>
+    </view>
+  </block>
+
+  <button class="logout" bindtap="onLogout">退出登录</button>
+</view>

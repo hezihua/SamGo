@@ -6,6 +6,7 @@ export interface Profile {
   nickname: string;
   avatar_url: string | null;
   phone: string | null;
+  wechat_openid: string | null;
   created_at: string;
 }
 

@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/navbar";
 import { OrderDetail } from "@/components/order-detail";
@@ -8,6 +10,39 @@ import { ChevronLeft } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+function orderShareUrl(id: string) {
+  const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+  return base ? `${base}/orders/${id}` : undefined;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: order } = await supabase
+    .from("group_orders")
+    .select("title, delivery_address, deadline")
+    .eq("id", id)
+    .single();
+
+  if (!order) {
+    return { title: "拼单不存在 | SamGo" };
+  }
+
+  const description = `截止 ${formatDate(order.deadline)} · 取货 ${order.delivery_address}`;
+
+  return {
+    title: `${order.title} | SamGo 山姆拼单`,
+    description,
+    openGraph: {
+      title: order.title,
+      description,
+      type: "website",
+    },
+  };
 }
 
 export default async function OrderPage({ params }: PageProps) {
@@ -64,7 +99,7 @@ export default async function OrderPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-3xl px-4 py-6 pb-28 sm:py-8 sm:pb-8">
         <Link href="/" className="mb-6 inline-block">
           <Button variant="ghost" size="sm">
             <ChevronLeft className="h-4 w-4" />
@@ -81,6 +116,7 @@ export default async function OrderPage({ params }: PageProps) {
           currentUserId={user?.id ?? null}
           isParticipant={isParticipant}
           isCreator={isCreator}
+          shareBaseUrl={orderShareUrl(id)}
         />
       </main>
     </>

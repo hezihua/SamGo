@@ -1,0 +1,19 @@
+{
+  "description": "SamGo 山姆拼单小程序",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "setting": {
+    "bundle": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "enhance": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.7.0",
+  "appid": "请替换为你的AppID",
+  "projectname": "samgo-miniprogram",
+  "condition": {}
+}

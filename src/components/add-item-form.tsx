@@ -62,7 +62,7 @@ export function AddItemForm({ orderId, products, disabled }: AddItemFormProps) {
   if (disabled) {
     return (
       <p className="text-sm text-sams-gray-500 text-center py-4">
-        拼单已截止，无法添加商品
+        拼单已截止或已过截止时间，无法添加商品
       </p>
     );
   }

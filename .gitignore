@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# 小程序本地配置（含 anon key）
+miniprogram/config.js
+
 # vercel
 .vercel
 

@@ -1,0 +1,25 @@
+<view class="wrap">
+  <view class="card hero">
+    <text class="title">SamGo 山姆拼单</text>
+    <text class="muted">使用微信登录后即可参与拼单</text>
+  </view>
+
+  <view class="card">
+    <text class="label">昵称（可选）</text>
+    <input
+      class="input"
+      placeholder="方便群里认出你"
+      value="{{nickname}}"
+      bindinput="onNicknameInput"
+    />
+    <button
+      class="btn-primary login-btn"
+      loading="{{loading}}"
+      disabled="{{loading}}"
+      bindtap="onWechatLogin"
+    >
+      微信一键登录
+    </button>
+    <text class="error" wx:if="{{error}}">{{error}}</text>
+  </view>
+</view>
