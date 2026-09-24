@@ -11,7 +11,6 @@ const STATUS_LABEL = {
 Page({
   data: {
     user: null,
-    isLeader: false,
     orders: [],
     loading: true,
     error: "",
@@ -23,10 +22,7 @@ Page({
       wx.redirectTo({ url: "/pages/login/login" });
       return;
     }
-    this.setData({
-      user: session.user,
-      isLeader: Boolean(session.is_leader),
-    });
+    this.setData({ user: session.user });
     this.loadOrders();
   },
 

@@ -68,6 +68,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "\u5546\u54c1\u4e0d\u5b58\u5728" }, { status: 404 });
     }
 
+    const { data: allowed, error: allowedError } = await admin
+      .from("group_order_products")
+      .select("product_id")
+      .eq("group_order_id", group_order_id)
+      .eq("product_id", product_id)
+      .maybeSingle();
+
+    if (allowedError) {
+      console.error("[order-items] group_order_products", allowedError);
+      return NextResponse.json({ error: "\u6821\u9a8c\u5546\u54c1\u5931\u8d25" }, { status: 500 });
+    }
+
+    if (!allowed) {
+      const { count, error: countError } = await admin
+        .from("group_order_products")
+        .select("product_id", { count: "exact", head: true })
+        .eq("group_order_id", group_order_id);
+
+      if (countError) {
+        console.error("[order-items] group_order_products count", countError);
+        return NextResponse.json({ error: "\u6821\u9a8c\u5546\u54c1\u5931\u8d25" }, { status: 500 });
+      }
+
+      if (count && count > 0) {
+        return NextResponse.json(
+          { error: "\u8be5\u5546\u54c1\u672a\u7eb3\u5165\u672c\u6b21\u62fc\u5355" },
+          { status: 400 }
+        );
+      }
+    }
+
     const { error: participantError } = await admin.from("participants").upsert(
       {
         group_order_id,

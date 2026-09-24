@@ -50,7 +50,15 @@ Page({
         throw new Error("\u62fc\u5355\u4e0d\u5b58\u5728");
       }
       const canAdd = order.status === "open" || order.status === "closing";
-      const products = await rest("products?select=*&order=name.asc");
+      let products = [];
+      const links = await rest(
+        `group_order_products?group_order_id=eq.${orderId}&select=sort_order,products(id,name,price,image_url,category,unit)&order=sort_order.asc`,
+      );
+      if (Array.isArray(links) && links.length > 0) {
+        products = links.map((row) => row.products).filter(Boolean);
+      } else {
+        products = await rest("products?select=*&order=name.asc");
+      }
       const myItems = userId
         ? await rest(
             `order_items?group_order_id=eq.${orderId}&user_id=eq.${userId}&select=id,product_name,product_price,quantity&order=created_at.desc`

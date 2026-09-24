@@ -35,6 +35,26 @@
     />
   </view>
 
+  <view class="card products-card">
+    <text class="label">拼单商品（后台商品库，至少选 1 个）</text>
+    <text class="hint" wx:if="{{selectedCount > 0}}">已选 {{selectedCount}} 项</text>
+    <view wx:if="{{productsLoading}}" class="muted">加载商品…</view>
+    <view wx:elif="{{products.length == 0}}" class="muted">暂无商品，请先在 Web 后台添加</view>
+    <block wx:else>
+      <view
+        class="product-pick {{item.selected ? 'selected' : ''}}"
+        wx:for="{{products}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onToggleProduct"
+      >
+        <text class="product-name">{{item.name}}</text>
+        <text class="product-meta">¥{{item.price}} · {{item.category}}</text>
+        <text class="check">{{item.selected ? '✓' : ''}}</text>
+      </view>
+    </block>
+  </view>
+
   <button
     class="btn-primary submit"
     loading="{{loading}}"

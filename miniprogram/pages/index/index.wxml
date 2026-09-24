@@ -18,6 +18,6 @@
     </view>
   </block>
 
-  <button wx:if="{{isLeader}}" class="btn-primary fab" bindtap="onCreate">发起拼单</button>
+  <button class="btn-primary fab" bindtap="onCreate">发起拼单</button>
   <button class="logout" bindtap="onLogout">退出登录</button>
 </view>

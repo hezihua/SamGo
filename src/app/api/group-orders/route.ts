@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
-import { isLeaderOpenId } from "@/lib/leader";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 async function userFromRequest(request: Request): Promise<User | null> {
@@ -29,25 +28,12 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient();
 
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .select("wechat_openid")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile?.wechat_openid) {
-      return NextResponse.json({ error: "\u672a\u7ed1\u5b9a\u5fae\u4fe1\u8d26\u53f7" }, { status: 403 });
-    }
-
-    if (!isLeaderOpenId(profile.wechat_openid)) {
-      return NextResponse.json({ error: "\u4ec5\u56e2\u957f\u53ef\u53d1\u8d77\u62fc\u5355" }, { status: 403 });
-    }
-
     const body = (await request.json()) as {
       title?: string;
       delivery_address?: string;
       deadline?: string;
       min_participants?: number;
+      product_ids?: string[];
     };
 
     const title = body.title?.trim();
@@ -65,6 +51,34 @@ export async function POST(request: Request) {
       typeof body.min_participants === "number" && body.min_participants >= 2
         ? body.min_participants
         : 2;
+
+    const product_ids = Array.isArray(body.product_ids)
+      ? [...new Set(body.product_ids.map((id) => id?.trim()).filter(Boolean))]
+      : [];
+
+    if (product_ids.length === 0) {
+      return NextResponse.json(
+        { error: "\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u4e2a\u5546\u54c1" },
+        { status: 400 }
+      );
+    }
+
+    const { data: catalogRows, error: catalogError } = await admin
+      .from("products")
+      .select("id")
+      .in("id", product_ids);
+
+    if (catalogError) {
+      console.error("[group-orders] products", catalogError);
+      return NextResponse.json({ error: "\u6821\u9a8c\u5546\u54c1\u5931\u8d25" }, { status: 500 });
+    }
+
+    if ((catalogRows ?? []).length !== product_ids.length) {
+      return NextResponse.json(
+        { error: "\u5305\u542b\u4e0d\u5b58\u5728\u7684\u5546\u54c1\uff0c\u8bf7\u91cd\u65b0\u9009\u62e9" },
+        { status: 400 }
+      );
+    }
 
     const { data: order, error: orderError } = await admin
       .from("group_orders")
@@ -101,6 +115,23 @@ export async function POST(request: Request) {
         { error: "\u521b\u5efa\u62fc\u5355\u6210\u529f\u4f46\u52a0\u5165\u53c2\u4e0e\u8005\u5931\u8d25" },
         { status: 500 }
       );
+    }
+
+    const linkRows = product_ids.map((product_id, index) => ({
+      group_order_id: order.id,
+      product_id,
+      sort_order: index,
+    }));
+
+    const { error: linkError } = await admin.from("group_order_products").insert(linkRows);
+
+    if (linkError) {
+      console.error("[group-orders] group_order_products", linkError);
+      await admin.from("group_orders").delete().eq("id", order.id);
+      const hint = String(linkError.message || "").includes("group_order_products")
+        ? "\u8bf7\u5728 Supabase \u6267\u884c 006_group_order_products.sql"
+        : linkError.message || "\u5173\u8054\u5546\u54c1\u5931\u8d25";
+      return NextResponse.json({ error: hint }, { status: 500 });
     }
 
     return NextResponse.json({ order });

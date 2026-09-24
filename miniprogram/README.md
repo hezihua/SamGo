@@ -7,13 +7,13 @@
    - `supabase/migrations/002_wechat_openid.sql`
    - `supabase/migrations/004_drop_profile_trigger.sql`（登录 500 / `Database error creating new user` 时**先跑这个**）
    - 或 `supabase/migrations/003_fix_handle_new_user.sql`（保留自动建 profile 的完整修复）
-   - `supabase/migrations/005_leader_only_group_orders.sql`（仅团长 API 可创建拼单）
+   - `supabase/migrations/005_leader_only_group_orders.sql`（拼单创建仅走 API，禁止客户端直写）
    - 本地一键（需 `.env.local` 配置 `SUPABASE_DB_URL`）：`pnpm db:apply:004`
 2. 在项目根目录 `.env.local` 配置：
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `WECHAT_MINI_APP_ID` / `WECHAT_MINI_APP_SECRET`
    - `WECHAT_AUTH_SECRET`（随机长字符串）
-   - `WECHAT_LEADER_OPENID`（团长微信 openid，仅此人可发起拼单；首次登录后在 Supabase `profiles.wechat_openid` 查看自己的值）
+   - `WECHAT_LEADER_OPENID`（可选，登录响应 `is_leader`；发起拼单不限团长）
 3. 部署 Next 到 HTTPS 域名（或本地隧道用于调试）
 
 ## 2. 小程序配置

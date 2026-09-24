@@ -1,5 +1,6 @@
 const { getSession } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
+const { rest } = require("../../utils/supabase");
 
 function todayString() {
   const d = new Date();
@@ -17,6 +18,9 @@ Page({
     time: "18:00",
     minParticipants: "2",
     today: "",
+    products: [],
+    productsLoading: true,
+    selectedCount: 0,
     loading: false,
     error: "",
   },
@@ -27,12 +31,32 @@ Page({
       wx.redirectTo({ url: "/pages/login/login" });
       return;
     }
-    if (!session.is_leader) {
-      wx.showToast({ title: "\u4ec5\u56e2\u957f\u53ef\u53d1\u8d77\u62fc\u5355", icon: "none" });
-      setTimeout(() => wx.navigateBack(), 1500);
-      return;
-    }
     this.setData({ today: todayString() });
+    this.loadProducts();
+  },
+
+  async loadProducts() {
+    this.setData({ productsLoading: true, error: "" });
+    try {
+      const rows = await rest("products?select=id,name,price,category&order=name.asc");
+      const products = (rows || []).map((p) => ({ ...p, selected: false }));
+      this.setData({ products, productsLoading: false });
+    } catch (err) {
+      this.setData({
+        productsLoading: false,
+        error: err.message || "\u52a0\u8f7d\u5546\u54c1\u5931\u8d25",
+      });
+    }
+  },
+
+  onToggleProduct(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    const products = this.data.products.map((p) =>
+      p.id === id ? { ...p, selected: !p.selected } : p,
+    );
+    const selectedCount = products.filter((p) => p.selected).length;
+    this.setData({ products, selectedCount });
   },
 
   onTitleInput(e) {
@@ -81,6 +105,14 @@ Page({
       return;
     }
 
+    const product_ids = this.data.products
+      .filter((p) => p.selected)
+      .map((p) => p.id);
+    if (product_ids.length === 0) {
+      this.setData({ error: "\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u4e2a\u5546\u54c1" });
+      return;
+    }
+
     const session = getSession();
     if (!session?.user?.id) {
       wx.redirectTo({ url: "/pages/login/login" });
@@ -96,6 +128,7 @@ Page({
       delivery_address: trimmedAddress,
       deadline,
       min_participants: min,
+      product_ids,
     })
       .then((result) => {
         if (!result?.order?.id) {
