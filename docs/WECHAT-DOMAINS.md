@@ -5,7 +5,7 @@
 ## request 合法域名
 
 ```
-sam-go-ochre.vercel.app
+samgo.haylee.site
 ciltmxjnydsqgcpvwwie.supabase.co
 ```
 
@@ -19,10 +19,12 @@ hzh-samgo.oss-cn-shenzhen.aliyuncs.com
 
 `miniprogram/config.js` 中 `apiBase` 应为：
 
-`https://sam-go-ochre.vercel.app`
+`https://samgo.haylee.site`
 
 改完后在微信开发者工具 **编译** → 真机预览前关闭依赖「不校验合法域名」（或域名配好后正式扫码）。
 
+**国内真机：** 优先用已备案/可访问的自定义域名（如 `samgo.haylee.site`），勿用 `*.vercel.app`；仍超时时见 [API-HOSTING-CN.md](./API-HOSTING-CN.md)。
+
 ## 管理后台（浏览器）
 
-https://sam-go-ochre.vercel.app/admin/products
+https://samgo.haylee.site/admin/products

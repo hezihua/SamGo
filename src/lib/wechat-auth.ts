@@ -137,19 +137,17 @@ export async function signInWithWechatOpenId(
 
   const userId = sessionData.user!.id;
 
-  await admin.from("profiles").upsert(
-    {
-      id: userId,
-      wechat_openid: openid,
-      nickname: displayName,
-    },
-    { onConflict: "id" },
-  );
-
   const { data: profile } = await admin
     .from("profiles")
+    .upsert(
+      {
+        id: userId,
+        wechat_openid: openid,
+        nickname: displayName,
+      },
+      { onConflict: "id" },
+    )
     .select("nickname")
-    .eq("id", userId)
     .single();
 
   return {

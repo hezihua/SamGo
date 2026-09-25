@@ -5,6 +5,9 @@ import {
   signInWithWechatOpenId,
 } from "@/lib/wechat-auth";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
