@@ -19,6 +19,27 @@ function formatDeadlineShort(iso) {
   return s.length > 16 ? s.slice(0, 16) : s;
 }
 
+function mergeProductsWithMyItems(products, myItems) {
+  const byName = new Map();
+  for (const row of myItems || []) {
+    const key = row.product_name;
+    if (!byName.has(key)) {
+      byName.set(key, { id: row.id, quantity: 0 });
+    }
+    const entry = byName.get(key);
+    entry.quantity += row.quantity || 0;
+    entry.id = row.id;
+  }
+  return (products || []).map((p) => {
+    const cart = byName.get(p.name);
+    return {
+      ...p,
+      myQty: cart ? cart.quantity : 0,
+      myItemId: cart ? cart.id : "",
+    };
+  });
+}
+
 function buildTeamGroups(rows) {
   const map = new Map();
   for (const row of rows || []) {
@@ -51,6 +72,7 @@ Page({
     teamGroups: [],
     statusLabel: "",
     canAdd: false,
+    canMinus: false,
     canClose: false,
     loading: true,
     error: "",
@@ -73,10 +95,13 @@ Page({
     this.loadAll();
   },
 
-  async loadAll() {
+  async loadAll(options) {
+    const silent = options && options.silent;
     const { orderId } = this.data;
     const userId = this._userId;
-    this.setData({ loading: true, error: "" });
+    if (!silent) {
+      this.setData({ loading: true, error: "" });
+    }
     try {
       await requestWithAuth("/api/group-orders/close-expired", "POST").catch(
         () => {},
@@ -90,8 +115,8 @@ Page({
       }
       const canAdd = order.status === "open" || order.status === "closing";
       const isCreator = order.creator_id === userId;
-      const canClose =
-        canAdd && (isCreator || this._isLeader);
+      const canMinus = isCreator || this._isLeader;
+      const canClose = canAdd && canMinus;
 
       let products = [];
       const links = await rest(
@@ -103,11 +128,13 @@ Page({
         products = await rest("products?select=*&order=name.asc");
       }
 
-      const myItems = userId
+      const myItemsRaw = userId
         ? await rest(
             `order_items?group_order_id=eq.${orderId}&user_id=eq.${userId}&select=id,product_name,product_price,quantity&order=created_at.desc`,
           )
         : [];
+      const myItems = myItemsRaw || [];
+      products = mergeProductsWithMyItems(products, myItems);
 
       const teamRows = await rest(
         `order_items?group_order_id=eq.${orderId}&select=id,user_id,product_name,product_price,quantity,profiles(nickname)&order=created_at.asc`,
@@ -118,10 +145,11 @@ Page({
       this.setData({
         order,
         products: products || [],
-        myItems: myItems || [],
+        myItems,
         teamGroups: buildTeamGroups(teamRows),
         statusLabel: STATUS_LABEL[order.status] || order.status,
         canAdd,
+        canMinus,
         canClose,
         loading: false,
       });
@@ -133,93 +161,55 @@ Page({
     }
   },
 
-  onAddProduct(e) {
-    const productId = e.currentTarget.dataset.id;
-    const name = e.currentTarget.dataset.name;
-    if (!productId || !this.data.canAdd) return;
-
-    wx.showModal({
-      title: name,
-      editable: true,
-      placeholderText: "\u6570\u91cf",
-      success: async (res) => {
-        if (!res.confirm) return;
-        const quantity = parseInt(res.content, 10);
-        if (!quantity || quantity < 1) {
-          wx.showToast({
-            title: "\u8bf7\u8f93\u5165\u6709\u6548\u6570\u91cf",
-            icon: "none",
-          });
-          return;
-        }
-        try {
-          await requestWithAuth("/api/order-items", "POST", {
-            group_order_id: this.data.orderId,
-            product_id: productId,
-            quantity,
-          });
-          wx.showToast({ title: "\u5df2\u6dfb\u52a0", icon: "success" });
-          this.loadAll();
-        } catch (err) {
-          wx.showToast({ title: err.message || "\u5931\u8d25", icon: "none" });
-        }
-      },
-    });
+  async _applyItemQuantity(productId, itemId, currentQty, nextQty) {
+    if (this._qtyBusy) return;
+    if (nextQty < currentQty && !this.data.canMinus) {
+      wx.showToast({
+        title: "\u53c2\u4e0e\u62fc\u5355\u53ea\u53ef\u52a0\u8d2d",
+        icon: "none",
+      });
+      return;
+    }
+    this._qtyBusy = true;
+    try {
+      if (nextQty < 1) {
+        if (!itemId) return;
+        await requestWithAuth(`/api/order-items/${itemId}`, "DELETE");
+      } else if (!itemId) {
+        if (!productId) return;
+        await requestWithAuth("/api/order-items", "POST", {
+          group_order_id: this.data.orderId,
+          product_id: productId,
+          quantity: nextQty,
+        });
+      } else {
+        await requestWithAuth(`/api/order-items/${itemId}`, "PATCH", {
+          quantity: nextQty,
+        });
+      }
+      await this.loadAll({ silent: true });
+    } catch (err) {
+      wx.showToast({ title: err.message || "\u5931\u8d25", icon: "none" });
+    } finally {
+      this._qtyBusy = false;
+    }
   },
 
-  onEditMyItem(e) {
-    const itemId = e.currentTarget.dataset.id;
-    const name = e.currentTarget.dataset.name;
-    const current = e.currentTarget.dataset.qty;
-    if (!itemId || !this.data.canAdd) return;
-
-    wx.showModal({
-      title: name,
-      editable: true,
-      placeholderText: "\u6570\u91cf",
-      content: String(current || ""),
-      success: async (res) => {
-        if (!res.confirm) return;
-        const quantity = parseInt(res.content, 10);
-        if (!quantity || quantity < 1) {
-          wx.showToast({
-            title: "\u8bf7\u8f93\u5165\u6709\u6548\u6570\u91cf",
-            icon: "none",
-          });
-          return;
-        }
-        try {
-          await requestWithAuth(
-            `/api/order-items/${itemId}`,
-            "PATCH",
-            { quantity },
-          );
-          wx.showToast({ title: "\u5df2\u66f4\u65b0", icon: "success" });
-          this.loadAll();
-        } catch (err) {
-          wx.showToast({ title: err.message || "\u5931\u8d25", icon: "none" });
-        }
-      },
-    });
+  onQtyPlus(e) {
+    if (!this.data.canAdd) return;
+    const productId = e.currentTarget.dataset.productId;
+    const itemId = e.currentTarget.dataset.itemId || "";
+    const qty = parseInt(e.currentTarget.dataset.qty, 10) || 0;
+    this._applyItemQuantity(productId, itemId, qty, qty + 1);
   },
 
-  onDeleteMyItem(e) {
-    const itemId = e.currentTarget.dataset.id;
-    if (!itemId || !this.data.canAdd) return;
-
-    wx.showModal({
-      title: "\u5220\u9664\u8be5\u9009\u8d2d\uff1f",
-      success: async (res) => {
-        if (!res.confirm) return;
-        try {
-          await requestWithAuth(`/api/order-items/${itemId}`, "DELETE");
-          wx.showToast({ title: "\u5df2\u5220\u9664", icon: "success" });
-          this.loadAll();
-        } catch (err) {
-          wx.showToast({ title: err.message || "\u5931\u8d25", icon: "none" });
-        }
-      },
-    });
+  onQtyMinus(e) {
+    if (!this.data.canAdd || !this.data.canMinus) return;
+    const productId = e.currentTarget.dataset.productId;
+    const itemId = e.currentTarget.dataset.itemId || "";
+    const qty = parseInt(e.currentTarget.dataset.qty, 10) || 0;
+    if (qty < 1) return;
+    this._applyItemQuantity(productId, itemId, qty, qty - 1);
   },
 
   onCloseOrder() {

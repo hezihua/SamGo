@@ -51,16 +51,32 @@
           <text class="sku-name">{{item.name}}</text>
           <text class="sku-price">¥{{item.price}}</text>
         </view>
-        <button
-          class="sku-add btn-primary"
-          size="mini"
-          data-id="{{item.id}}"
-          data-name="{{item.name}}"
-          bindtap="onAddProduct"
-          disabled="{{!canAdd}}"
-        >
-          {{canAdd ? '加购' : '已截止'}}
-        </button>
+        <view wx:if="{{canAdd}}" class="qty-stepper {{canMinus ? '' : 'qty-stepper-add-only'}}">
+          <view
+            wx:if="{{canMinus}}"
+            class="qty-btn {{item.myQty < 1 ? 'is-disabled' : ''}}"
+            data-product-id="{{item.id}}"
+            data-item-id="{{item.myItemId}}"
+            data-qty="{{item.myQty}}"
+            bindtap="onQtyMinus"
+          >
+            <text class="qty-btn-text">−</text>
+          </view>
+          <text wx:if="{{item.myQty > 0 || canMinus}}" class="qty-num">{{item.myQty}}</text>
+          <view
+            class="qty-btn qty-btn-plus"
+            data-product-id="{{item.id}}"
+            data-item-id="{{item.myItemId}}"
+            data-qty="{{item.myQty}}"
+            bindtap="onQtyPlus"
+          >
+            <text class="qty-btn-text">+</text>
+          </view>
+        </view>
+        <view wx:else class="sku-qty-readonly">
+          <text wx:if="{{item.myQty > 0}}">已选 {{item.myQty}}</text>
+          <text wx:else class="muted">已截止</text>
+        </view>
       </view>
     </view>
 
@@ -75,18 +91,25 @@
           <text class="cart-name">{{item.product_name}}</text>
           <text class="cart-sub">x{{item.quantity}} · ¥{{item.product_price}}</text>
         </view>
-        <view wx:if="{{canAdd}}" class="cart-actions">
-          <text
-            class="link-btn"
-            data-id="{{item.id}}"
-            data-name="{{item.product_name}}"
+        <view wx:if="{{canAdd}}" class="qty-stepper qty-stepper-sm {{canMinus ? '' : 'qty-stepper-add-only'}}">
+          <view
+            wx:if="{{canMinus}}"
+            class="qty-btn {{item.quantity < 1 ? 'is-disabled' : ''}}"
+            data-item-id="{{item.id}}"
             data-qty="{{item.quantity}}"
-            bindtap="onEditMyItem"
-            >改数量</text
+            bindtap="onQtyMinus"
           >
-          <text class="link-btn danger" data-id="{{item.id}}" bindtap="onDeleteMyItem"
-            >删除</text
+            <text class="qty-btn-text">−</text>
+          </view>
+          <text class="qty-num">{{item.quantity}}</text>
+          <view
+            class="qty-btn qty-btn-plus"
+            data-item-id="{{item.id}}"
+            data-qty="{{item.quantity}}"
+            bindtap="onQtyPlus"
           >
+            <text class="qty-btn-text">+</text>
+          </view>
         </view>
       </view>
     </view>
