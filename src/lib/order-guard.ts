@@ -15,7 +15,7 @@ export async function assertOrderEditable(
   }
 
   if (order.status !== "open" && order.status !== "closing") {
-    throw new Error("\u62fc\u5355\u5df2\u622a\u6b62\uff0c\u65e0\u6cd5\u6dfb\u52a0\u5546\u54c1");
+    throw new Error("\u62fc\u5355\u5df2\u622a\u6b62\uff0c\u65e0\u6cd5\u7ee7\u7eed\u4fee\u6539");
   }
 
   return order;

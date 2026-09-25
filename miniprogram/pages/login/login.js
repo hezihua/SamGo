@@ -9,7 +9,7 @@ Page({
 
   onLoad() {
     const session = getSession();
-    if (session?.access_token) {
+    if (session && session.access_token) {
       wx.redirectTo({ url: "/pages/index/index" });
     }
   },

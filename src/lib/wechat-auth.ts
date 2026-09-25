@@ -161,3 +161,16 @@ export async function signInWithWechatOpenId(
     },
   };
 }
+
+export async function refreshSupabaseSession(refreshToken: string) {
+  const auth = createAuthClient();
+  const { data, error } = await auth.auth.refreshSession({
+    refresh_token: refreshToken,
+  });
+
+  if (error || !data.session) {
+    throw new Error(error?.message || "\u767b\u5f55\u5df2\u8fc7\u671f\uff0c\u8bf7\u91cd\u65b0\u767b\u5f55");
+  }
+
+  return data.session;
+}

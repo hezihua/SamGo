@@ -8,6 +8,11 @@
   padding: 40rpx;
 }
 
+.muted {
+  color: #94a3b8;
+  font-size: 26rpx;
+}
+
 .tag {
   display: inline-block;
   margin-top: 16rpx;
@@ -24,22 +29,81 @@
   margin-bottom: 16rpx;
 }
 
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
 .product-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 16rpx 0;
   border-bottom: 1rpx solid #e2e8f0;
+  gap: 16rpx;
+}
+
+.product-thumb {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 12rpx;
+  flex-shrink: 0;
+  background: #f1f5f9;
+}
+
+.product-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 24rpx;
+}
+
+.product-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .product-name {
-  flex: 1;
-  padding-right: 16rpx;
+  display: block;
+  font-size: 28rpx;
+}
+
+.product-price {
+  display: block;
+  font-size: 24rpx;
+  color: #64748b;
+  margin-top: 4rpx;
 }
 
 .item-row {
   padding: 12rpx 0;
   font-size: 26rpx;
+}
+
+.my-row {
+  border-bottom: 1rpx solid #f1f5f9;
+}
+
+.item-text {
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.item-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.team-block {
+  margin-bottom: 20rpx;
+}
+
+.team-name {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8rpx;
 }
 
 .error {
@@ -50,4 +114,14 @@
 
 .share {
   margin-top: 24rpx;
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.btn-warn {
+  background: #fef2f2;
+  color: #dc2626;
 }

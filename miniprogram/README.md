@@ -8,6 +8,7 @@
    - `supabase/migrations/004_drop_profile_trigger.sql`（登录 500 / `Database error creating new user` 时**先跑这个**）
    - 或 `supabase/migrations/003_fix_handle_new_user.sql`（保留自动建 profile 的完整修复）
    - `supabase/migrations/005_leader_only_group_orders.sql`（拼单创建仅走 API，禁止客户端直写）
+   - `supabase/migrations/006_group_order_products.sql`（发起拼单勾选商品）
    - 本地一键（需 `.env.local` 配置 `SUPABASE_DB_URL`）：`pnpm db:apply:004`
 2. 在项目根目录 `.env.local` 配置：
    - `SUPABASE_SERVICE_ROLE_KEY`
@@ -22,6 +23,7 @@
 2. 在 `project.config.json` 填写你的 **AppID**
 3. 微信公众平台 → 开发管理 → 服务器域名：
    - request：`https://你的部署域名`、`https://xxx.supabase.co`
+   - downloadFile（商品图 OSS/CDN）：如 `https://hzh-samgo.oss-cn-shenzhen.aliyuncs.com`
 
 ## 3. 打开项目
 

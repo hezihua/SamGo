@@ -1,4 +1,9 @@
-const { getSession, clearSession } = require("../../utils/auth");
+const {
+  getSession,
+  clearSession,
+  ensureValidSession,
+  isAuthErrorMessage,
+} = require("../../utils/auth");
 const { fetchOpenOrders } = require("../../utils/supabase");
 
 const STATUS_LABEL = {
@@ -16,14 +21,15 @@ Page({
     error: "",
   },
 
-  onShow() {
-    const session = getSession();
-    if (!session?.access_token) {
+  async onShow() {
+    try {
+      const session = await ensureValidSession();
+      this.setData({ user: session.user });
+      this.loadOrders();
+    } catch (_err) {
+      clearSession();
       wx.redirectTo({ url: "/pages/login/login" });
-      return;
     }
-    this.setData({ user: session.user });
-    this.loadOrders();
   },
 
   async loadOrders() {
@@ -38,6 +44,11 @@ Page({
         }));
       this.setData({ orders, loading: false });
     } catch (err) {
+      if (isAuthErrorMessage(err.message)) {
+        clearSession();
+        wx.redirectTo({ url: "/pages/login/login" });
+        return;
+      }
       this.setData({
         error: err.message || "\u52a0\u8f7d\u5931\u8d25",
         loading: false,

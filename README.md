@@ -11,6 +11,8 @@ Next.js 提供微信登录等 API，拼单数据在 Supabase；客户端为 `min
 - `supabase/migrations/001_initial_schema.sql`
 - `supabase/migrations/002_wechat_openid.sql`
 - `supabase/migrations/004_drop_profile_trigger.sql`（若 Auth 建用户报 Database error）
+- `supabase/migrations/005_leader_only_group_orders.sql`
+- `supabase/migrations/006_group_order_products.sql`
 
 ### 2. 环境变量
 
@@ -46,7 +48,13 @@ scripts/apply-supabase-migration.mjs
 
 ## 部署
 
-将 Next 部署到 HTTPS（如 Vercel），配置与 `.env.local` 相同的环境变量；小程序 `apiBase` 改为生产域名，并在微信公众平台配置 request 合法域名。
+1. `pnpm build` 通过后，将 Next 部署到 HTTPS（推荐 Vercel）。
+2. 在部署平台配置与 `.env.local` 相同的环境变量（Supabase、微信、`WECHAT_AUTH_SECRET`、`ADMIN_PASSWORD`、OSS 等）。
+3. 小程序 `config.js` 的 `apiBase` 改为生产域名。
+4. 微信公众平台配置 **request** 合法域名（Next + Supabase）；若展示 OSS 商品图，另配 **downloadFile** 域名。
+5. 真机关闭「不校验合法域名」做一次完整流程：登录 → 发起 → 加购 → 复制汇总 → 截止拼单。
+
+详见 [docs/PRODUCT.md](./docs/PRODUCT.md)。
 
 ```bash
 pnpm build
