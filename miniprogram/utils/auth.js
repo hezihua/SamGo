@@ -1,4 +1,4 @@
-const config = require("../config");
+const { getApiBase } = require("./get-api-base");
 
 const SESSION_KEY = "samgo_session";
 const EXPIRY_BUFFER_SEC = 120;
@@ -13,6 +13,9 @@ function wxFailMessage(err) {
   }
   if (/domain list|url not in/i.test(msg)) {
     return "\u65e0\u6cd5\u8fde\u63a5\u670d\u52a1\u5668\uff1a\u8bf7\u5728\u5fae\u4fe1\u516c\u4f17\u5e73\u53f0\u914d\u7f6e request \u5408\u6cd5\u57df\u540d";
+  }
+  if (/^request:fail$/i.test(msg.trim())) {
+    return "request:fail \u2014 \u65e0\u6cd5\u8bbf\u95ee " + getApiBase() + "\uff0c\u8bf7\u770b\u63a7\u5236\u53f0\u5b8c\u6574\u62a5\u9519\u6216\u6362\u7f51\u7edc";
   }
   return msg;
 }
@@ -85,7 +88,7 @@ function sessionNeedsRefresh(session) {
 function refreshSessionWithToken(refreshToken) {
   return new Promise((resolve, reject) => {
     wx.request({
-      url: `${config.apiBase}/api/wechat/refresh`,
+      url: `${getApiBase()}/api/wechat/refresh`,
       method: "POST",
       timeout: 60000,
       header: { "content-type": "application/json" },
@@ -149,7 +152,7 @@ function loginWithWechat(nickname) {
           reject(new Error("wx.login 未返回 code"));
           return;
         }
-        postJsonWithRetry(`${config.apiBase}/api/wechat/login`, {
+        postJsonWithRetry(`${getApiBase()}/api/wechat/login`, {
           code: loginRes.code,
           nickname: nickname || undefined,
         })

@@ -81,7 +81,7 @@ export async function signInWithWechatOpenId(
   const auth = createAuthClient();
   const email = wechatEmail(openid);
   const password = wechatPassword(openid);
-  const displayName = nickname?.trim() || "微信用户";
+  const nicknameTrimmed = nickname?.trim();
 
   let { data: sessionData, error: signInError } =
     await auth.auth.signInWithPassword({ email, password });
@@ -93,7 +93,7 @@ export async function signInWithWechatOpenId(
         password,
         email_confirm: true,
         user_metadata: {
-          nickname: displayName,
+          nickname: nicknameTrimmed || "微信用户",
           wechat_openid: openid,
         },
       });
@@ -127,6 +127,17 @@ export async function signInWithWechatOpenId(
   }
 
   const userId = sessionData.user!.id;
+
+  const { data: existingProfile } = await admin
+    .from("profiles")
+    .select("nickname")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const displayName =
+    nicknameTrimmed ||
+    existingProfile?.nickname?.trim() ||
+    "微信用户";
 
   const { data: profile } = await admin
     .from("profiles")

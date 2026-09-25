@@ -1,4 +1,4 @@
-const config = require("../config");
+const { getApiBase } = require("./get-api-base");
 const {
   ensureValidSession,
   refreshSessionWithToken,
@@ -7,7 +7,7 @@ const {
 } = require("./auth");
 
 function requestOnce(path, method, body, accessToken) {
-  const url = `${config.apiBase}${path}`;
+  const url = `${getApiBase()}${path}`;
 
   return new Promise((resolve, reject) => {
     wx.request({

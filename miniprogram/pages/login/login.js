@@ -33,6 +33,13 @@ Page({
     this.setData({ nickname: e.detail.value });
   },
 
+  onNicknameReview(e) {
+    const nick = (e.detail && e.detail.value) || "";
+    if (nick.trim()) {
+      this.setData({ nickname: nick.trim() });
+    }
+  },
+
   async onWechatLogin() {
     this.setData({ loading: true, error: "" });
     try {

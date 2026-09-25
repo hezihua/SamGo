@@ -17,9 +17,7 @@ hzh-samgo.oss-cn-shenzhen.aliyuncs.com
 
 ## 小程序本地配置
 
-`miniprogram/config.js` 中 `apiBase` 应为：
-
-`https://samgo.haylee.site`
+`miniprogram/config.js` 会按环境自动选 `apiBase`（见 `utils/resolve-api-base.js`）：模拟器 + 本机 dev → `http://127.0.0.1:3000`；体验版/正式版 → `https://samgo.haylee.site`。
 
 改完后在微信开发者工具 **编译** → 真机预览前关闭依赖「不校验合法域名」（或域名配好后正式扫码）。
 
