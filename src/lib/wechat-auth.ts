@@ -116,15 +116,6 @@ export async function signInWithWechatOpenId(
         throw new Error(createError.message);
       }
     } else if (created.user) {
-      await admin.from("profiles").upsert(
-        {
-          id: created.user.id,
-          wechat_openid: openid,
-          nickname: displayName,
-        },
-        { onConflict: "id" },
-      );
-
       const signedIn = await auth.auth.signInWithPassword({ email, password });
       sessionData = signedIn.data;
       signInError = signedIn.error;
