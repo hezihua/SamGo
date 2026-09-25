@@ -4,7 +4,6 @@ const {
   ensureValidSession,
   isAuthErrorMessage,
 } = require("../../utils/auth");
-const { fetchOpenOrders } = require("../../utils/supabase");
 const { requestWithAuth } = require("../../utils/api");
 
 const STATUS_LABEL = {
@@ -34,6 +33,7 @@ Page({
     user: null,
     userInitial: "\u62fc",
     orders: [],
+    listTab: "active",
     loading: true,
     error: "",
   },
@@ -58,10 +58,12 @@ Page({
       await requestWithAuth("/api/group-orders/close-expired", "POST").catch(
         () => {},
       );
-      const rows = await fetchOpenOrders();
-      const orders = (rows || [])
-        .filter((o) => o.status === "open" || o.status === "closing")
-        .map((o) => ({
+      const scope = this.data.listTab === "history" ? "history" : "active";
+      const data = await requestWithAuth(
+        `/api/group-orders/mine?scope=${scope}`,
+        "GET",
+      );
+      const orders = (data.orders || []).map((o) => ({
           ...o,
           statusLabel: STATUS_LABEL[o.status] || o.status,
           deadlineShort: formatDeadlineShort(o.deadline),
@@ -78,6 +80,12 @@ Page({
         loading: false,
       });
     }
+  },
+
+  onTabChange(e) {
+    const tab = e.currentTarget.dataset.tab;
+    if (!tab || tab === this.data.listTab) return;
+    this.setData({ listTab: tab }, () => this.loadOrders());
   },
 
   onCreate() {

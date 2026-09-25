@@ -9,9 +9,24 @@
     </view>
   </view>
 
+  <view class="tabs px">
+    <text
+      class="tab {{listTab === 'active' ? 'tab-on' : ''}}"
+      data-tab="active"
+      bindtap="onTabChange"
+      >进行中</text
+    >
+    <text
+      class="tab {{listTab === 'history' ? 'tab-on' : ''}}"
+      data-tab="history"
+      bindtap="onTabChange"
+      >历史拼单</text
+    >
+  </view>
+
   <view class="section-head px">
     <view class="section-head-bar"></view>
-    <text class="section-head-title">进行中</text>
+    <text class="section-head-title">{{listTab === 'history' ? '已截止' : '进行中'}}</text>
     <text class="section-head-sub" wx:if="{{!loading && orders.length > 0}}"
       >{{orders.length}} 个</text
     >
@@ -25,8 +40,8 @@
   </view>
   <view wx:elif="{{orders.length === 0}}" class="empty-box">
     <view class="empty-icon"></view>
-    <text class="empty-title">还没有进行中的拼单</text>
-    <text class="empty-desc">发起一个，分享到微信群让大家选购</text>
+    <text class="empty-title">{{listTab === 'history' ? '暂无历史拼单' : '还没有进行中的拼单'}}</text>
+    <text class="empty-desc">{{listTab === 'history' ? '参与或发起并已截止的拼单会出现在这里' : '发起一个，分享到微信群让大家选购'}}</text>
   </view>
   <view wx:else class="order-list px">
     <view

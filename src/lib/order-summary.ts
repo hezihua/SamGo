@@ -20,6 +20,40 @@ function lineTotal(price: number | string, qty: number): number {
   return Number(price) * qty;
 }
 
+export type ProductAggregateRow = {
+  product_name: string;
+  quantity: number;
+  amount: number;
+  unit_price: number;
+};
+
+export function aggregateProductsByName(
+  items: Pick<SummaryItemRow, "product_name" | "product_price" | "quantity">[],
+): ProductAggregateRow[] {
+  const byProduct = new Map<
+    string,
+    { qty: number; amount: number; price: number | string }
+  >();
+  for (const row of items) {
+    const cur = byProduct.get(row.product_name) ?? {
+      qty: 0,
+      amount: 0,
+      price: row.product_price,
+    };
+    cur.qty += row.quantity;
+    cur.amount += lineTotal(row.product_price, row.quantity);
+    byProduct.set(row.product_name, cur);
+  }
+  return Array.from(byProduct.entries())
+    .map(([product_name, { qty, amount, price }]) => ({
+      product_name,
+      quantity: qty,
+      amount,
+      unit_price: Number(price),
+    }))
+    .sort((a, b) => a.product_name.localeCompare(b.product_name, "zh-CN"));
+}
+
 export function buildOrderSummaryText(
   order: SummaryOrder,
   items: SummaryItemRow[],
@@ -66,15 +100,10 @@ export function buildOrderSummaryText(
 
   lines.push("");
   lines.push("\u2014\u2014 \u6309\u5546\u54c1 \u2014\u2014");
-  const byProduct = new Map<string, { qty: number; amount: number }>();
-  for (const row of items) {
-    const cur = byProduct.get(row.product_name) ?? { qty: 0, amount: 0 };
-    cur.qty += row.quantity;
-    cur.amount += lineTotal(row.product_price, row.quantity);
-    byProduct.set(row.product_name, cur);
-  }
-  for (const [name, { qty, amount }] of byProduct) {
-    lines.push(`${name}\uff1a\u5171 ${qty} \u4ef6\uff0c\u00a5${money(amount)}`);
+  for (const row of aggregateProductsByName(items)) {
+    lines.push(
+      `${row.product_name}\uff1a\u5171 ${row.quantity} \u4ef6\uff0c\u00a5${money(row.amount)}`,
+    );
   }
 
   lines.push("");

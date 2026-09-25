@@ -1,6 +1,9 @@
 const { getSession } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
 const { rest } = require("../../utils/supabase");
+const { resolveOrderIdFromOptions } = require("../../utils/order-scene");
+
+const PENDING_ORDER_KEY = "samgo_pending_order_id";
 
 const STATUS_LABEL = {
   open: "\u8fdb\u884c\u4e2d",
@@ -63,6 +66,36 @@ function buildTeamGroups(rows) {
   return Array.from(map.values());
 }
 
+function buildProductTotals(rows) {
+  const map = new Map();
+  for (const row of rows || []) {
+    const name = row.product_name;
+    const price = Number(row.product_price);
+    const q = row.quantity || 0;
+    if (!map.has(name)) {
+      map.set(name, {
+        product_name: name,
+        quantity: 0,
+        amount: 0,
+        unit_price: price,
+      });
+    }
+    const entry = map.get(name);
+    entry.quantity += q;
+    entry.amount += price * q;
+  }
+  const list = Array.from(map.values());
+  list.sort(function (a, b) {
+    return a.product_name.localeCompare(b.product_name, "zh-CN");
+  });
+  let totalAmount = 0;
+  for (let i = 0; i < list.length; i++) {
+    list[i].amountText = list[i].amount.toFixed(2);
+    totalAmount += list[i].amount;
+  }
+  return { list, totalAmount: totalAmount.toFixed(2) };
+}
+
 Page({
   data: {
     orderId: "",
@@ -70,23 +103,31 @@ Page({
     products: [],
     myItems: [],
     teamGroups: [],
+    productTotals: [],
+    totalAmount: "0.00",
     statusLabel: "",
     canAdd: false,
     canMinus: false,
     canClose: false,
     loading: true,
     error: "",
+    wxacodeVisible: false,
+    wxacodeSrc: "",
+    wxacodeLoading: false,
   },
 
   onLoad(options) {
-    const session = getSession();
-    if (!session || !session.access_token) {
-      wx.redirectTo({ url: "/pages/login/login" });
-      return;
-    }
-    const orderId = options && options.id;
+    const orderId = resolveOrderIdFromOptions(options);
     if (!orderId) {
       this.setData({ loading: false, error: "\u62fc\u5355\u4e0d\u5b58\u5728" });
+      return;
+    }
+    const session = getSession();
+    if (!session || !session.access_token) {
+      try {
+        wx.setStorageSync(PENDING_ORDER_KEY, orderId);
+      } catch (_e) {}
+      wx.redirectTo({ url: "/pages/login/login" });
       return;
     }
     this._userId = session.user && session.user.id;
@@ -141,12 +182,15 @@ Page({
       );
 
       order.deadlineShort = formatDeadlineShort(order.deadline);
+      const totals = buildProductTotals(teamRows);
 
       this.setData({
         order,
         products: products || [],
         myItems,
         teamGroups: buildTeamGroups(teamRows),
+        productTotals: totals.list,
+        totalAmount: totals.totalAmount,
         statusLabel: STATUS_LABEL[order.status] || order.status,
         canAdd,
         canMinus,
@@ -266,5 +310,60 @@ Page({
           : "SamGo \u62fc\u5355",
       path: `/pages/order/detail?id=${orderId}`,
     };
+  },
+
+  async onShowWxacode() {
+    if (this.data.wxacodeLoading) return;
+    this.setData({ wxacodeVisible: true, wxacodeLoading: true, wxacodeSrc: "" });
+    try {
+      const data = await requestWithAuth(
+        `/api/group-orders/${this.data.orderId}/wxacode`,
+        "GET",
+      );
+      if (!data || !data.image_base64) {
+        throw new Error("\u751f\u6210\u5931\u8d25");
+      }
+      this.setData({
+        wxacodeSrc: "data:image/png;base64," + data.image_base64,
+        wxacodeLoading: false,
+      });
+    } catch (err) {
+      this.setData({ wxacodeVisible: false, wxacodeLoading: false });
+      wx.showToast({ title: err.message || "\u5931\u8d25", icon: "none" });
+    }
+  },
+
+  onCloseWxacode() {
+    this.setData({ wxacodeVisible: false });
+  },
+
+  onSaveWxacode() {
+    const src = this.data.wxacodeSrc;
+    if (!src) return;
+    const fs = wx.getFileSystemManager();
+    const path = `${wx.env.USER_DATA_PATH}/samgo-wxacode-${Date.now()}.png`;
+    const base64 = src.replace(/^data:image\/\w+;base64,/, "");
+    fs.writeFile({
+      filePath: path,
+      data: base64,
+      encoding: "base64",
+      success: () => {
+        wx.saveImageToPhotosAlbum({
+          filePath: path,
+          success: () => {
+            wx.showToast({ title: "\u5df2\u4fdd\u5b58\u5230\u76f8\u518c", icon: "success" });
+          },
+          fail: () => {
+            wx.showToast({
+              title: "\u8bf7\u5728\u8bbe\u7f6e\u4e2d\u5141\u8bb8\u4fdd\u5b58\u76f8\u518c",
+              icon: "none",
+            });
+          },
+        });
+      },
+      fail: () => {
+        wx.showToast({ title: "\u4fdd\u5b58\u5931\u8d25", icon: "none" });
+      },
+    });
   },
 });

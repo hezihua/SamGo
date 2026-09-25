@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  aggregateProductsByName,
   buildOrderSummaryText,
   type SummaryItemRow,
 } from "@/lib/order-summary";
@@ -48,8 +49,16 @@ export async function GET(request: Request, context: RouteContext) {
 
     const rows = (items ?? []) as unknown as SummaryItemRow[];
     const text = buildOrderSummaryText(order, rows);
+    const products = aggregateProductsByName(rows);
+    const total_amount = products.reduce((sum, p) => sum + p.amount, 0);
 
-    return NextResponse.json({ text, order, item_count: rows.length });
+    return NextResponse.json({
+      text,
+      order,
+      item_count: rows.length,
+      products,
+      total_amount,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "\u751f\u6210\u6c47\u603b\u5931\u8d25";
     console.error("[group-orders summary]", message);

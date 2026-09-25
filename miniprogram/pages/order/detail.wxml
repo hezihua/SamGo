@@ -29,6 +29,7 @@
       </button>
       <text class="action-hint">好友点开小程序卡片即可进入本页加购</text>
       <view class="action-footer">
+        <text class="action-link" bindtap="onShowWxacode">生成拼单小程序码</text>
         <text class="action-link" bindtap="onCopySummary">复制汇总文案（截止后对账用）</text>
         <text wx:if="{{canClose}}" class="action-close" bindtap="onCloseOrder">截止拼单</text>
       </view>
@@ -116,7 +117,27 @@
 
     <view class="section-head px">
       <view class="section-head-bar"></view>
-      <text class="section-head-title">全团选购</text>
+      <text class="section-head-title">全团按商品汇总</text>
+    </view>
+    <view class="card mx">
+      <view wx:if="{{productTotals.length === 0}}" class="empty-inline">暂无加购</view>
+      <view class="agg-line" wx:for="{{productTotals}}" wx:key="product_name">
+        <view class="agg-info">
+          <text class="agg-name">{{item.product_name}}</text>
+          <text class="agg-sub">¥{{item.unit_price}} / 件</text>
+        </view>
+        <text class="agg-qty">共 {{item.quantity}} 件</text>
+        <text class="agg-amt">¥{{item.amountText}}</text>
+      </view>
+      <view wx:if="{{productTotals.length > 0}}" class="agg-total">
+        <text>合计</text>
+        <text class="agg-total-amt">¥{{totalAmount}}</text>
+      </view>
+    </view>
+
+    <view class="section-head px">
+      <view class="section-head-bar"></view>
+      <text class="section-head-title">全团选购（按人）</text>
     </view>
     <view class="card mx">
       <view wx:if="{{teamGroups.length === 0}}" class="empty-inline">暂无成员加购</view>
@@ -132,4 +153,23 @@
       </view>
     </view>
   </block>
+
+  <view wx:if="{{wxacodeVisible}}" class="wxacode-mask" bindtap="onCloseWxacode">
+    <view class="wxacode-panel" catchtap="">
+      <text class="wxacode-title">扫码进入本拼单</text>
+      <view wx:if="{{wxacodeLoading}}" class="wxacode-loading muted">生成中…</view>
+      <image
+        wx:else
+        class="wxacode-img"
+        src="{{wxacodeSrc}}"
+        mode="aspectFit"
+        show-menu-by-longpress
+      />
+      <text class="wxacode-hint">可保存发群，长按图片也可识别</text>
+      <view wx:if="{{wxacodeSrc}}" class="wxacode-actions">
+        <view class="btn-primary wxacode-save" bindtap="onSaveWxacode">保存到相册</view>
+      </view>
+      <text class="wxacode-close" bindtap="onCloseWxacode">关闭</text>
+    </view>
+  </view>
 </view>
