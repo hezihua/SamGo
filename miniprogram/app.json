@@ -6,10 +6,11 @@
     "pages/order/detail"
   ],
   "window": {
-    "navigationBarTitleText": "SamGo 山姆拼单",
+    "navigationBarTitleText": "SamGo",
     "navigationBarBackgroundColor": "#0060a9",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#f8fafc"
+    "backgroundColor": "#f5f6f8",
+    "backgroundTextStyle": "dark"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

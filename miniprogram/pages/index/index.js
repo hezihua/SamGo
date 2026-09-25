@@ -13,9 +13,25 @@ const STATUS_LABEL = {
   completed: "\u5df2\u5b8c\u6210",
 };
 
+function formatDeadlineShort(iso) {
+  if (!iso) return "";
+  const s = String(iso);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (m) {
+    return `${m[2]}/${m[3]} ${m[4]}:${m[5]} \u622a\u6b62`;
+  }
+  return s.length > 16 ? s.slice(0, 16) : s;
+}
+
+function userInitial(nickname) {
+  const n = (nickname || "\u62fc").trim();
+  return n.charAt(0) || "\u62fc";
+}
+
 Page({
   data: {
     user: null,
+    userInitial: "\u62fc",
     orders: [],
     loading: true,
     error: "",
@@ -24,7 +40,10 @@ Page({
   async onShow() {
     try {
       const session = await ensureValidSession();
-      this.setData({ user: session.user });
+      this.setData({
+        user: session.user,
+        userInitial: userInitial(session.user && session.user.nickname),
+      });
       this.loadOrders();
     } catch (_err) {
       clearSession();
@@ -41,6 +60,7 @@ Page({
         .map((o) => ({
           ...o,
           statusLabel: STATUS_LABEL[o.status] || o.status,
+          deadlineShort: formatDeadlineShort(o.deadline),
         }));
       this.setData({ orders, loading: false });
     } catch (err) {

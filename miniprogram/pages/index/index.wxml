@@ -1,23 +1,62 @@
-<view class="wrap">
-  <view class="card">
-    <text class="title">你好，{{user.nickname || '拼友'}}</text>
-    <text class="muted">进行中的拼单</text>
-  </view>
-
-  <view wx:if="{{loading}}" class="muted center">加载中…</view>
-  <view wx:elif="{{error}}" class="error center">{{error}}</view>
-  <view wx:elif="{{orders.length === 0}}" class="card center muted">
-    暂无进行中的拼单
-  </view>
-  <block wx:else>
-    <view class="card order" wx:for="{{orders}}" wx:key="id" data-id="{{item.id}}" bindtap="onOrderTap">
-      <text class="order-title">{{item.title}}</text>
-      <text class="muted">截止 {{item.deadline}}</text>
-      <text class="muted">取货 {{item.delivery_address}}</text>
-      <text class="tag">{{item.statusLabel}}</text>
+<view class="page-home safe-bottom">
+  <view class="home-header">
+    <view class="user-row">
+      <view class="avatar">{{userInitial}}</view>
+      <view class="user-meta">
+        <text class="user-greet">你好，{{user.nickname || '拼友'}}</text>
+        <text class="user-tip">看看群里进行中的拼单</text>
+      </view>
     </view>
-  </block>
+  </view>
 
-  <button class="btn-primary fab" bindtap="onCreate">发起拼单</button>
-  <button class="logout" bindtap="onLogout">退出登录</button>
+  <view class="section-head px">
+    <view class="section-head-bar"></view>
+    <text class="section-head-title">进行中</text>
+    <text class="section-head-sub" wx:if="{{!loading && orders.length > 0}}"
+      >{{orders.length}} 个</text
+    >
+  </view>
+
+  <view wx:if="{{loading}}" class="state-box">
+    <text class="muted">加载中…</text>
+  </view>
+  <view wx:elif="{{error}}" class="state-box">
+    <text class="error-text">{{error}}</text>
+  </view>
+  <view wx:elif="{{orders.length === 0}}" class="empty-box">
+    <view class="empty-icon"></view>
+    <text class="empty-title">还没有进行中的拼单</text>
+    <text class="empty-desc">发起一个，分享到微信群让大家选购</text>
+  </view>
+  <view wx:else class="order-list px">
+    <view
+      class="order-card"
+      wx:for="{{orders}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onOrderTap"
+    >
+      <view class="order-card-top">
+        <text class="order-title">{{item.title}}</text>
+        <text class="tag {{item.status === 'open' || item.status === 'closing' ? 'tag-open' : 'tag-closed'}}">{{item.statusLabel}}</text>
+      </view>
+      <view class="order-meta-row">
+        <text class="meta-icon">⏱</text>
+        <text class="meta-text">{{item.deadlineShort}}</text>
+      </view>
+      <view class="order-meta-row">
+        <text class="meta-icon">📍</text>
+        <text class="meta-text">{{item.delivery_address}}</text>
+      </view>
+      <text class="order-arrow">›</text>
+    </view>
+  </view>
+
+  <view class="bottom-bar">
+    <view class="btn-primary bottom-bar-btn" bindtap="onCreate">发起拼单</view>
+  </view>
+
+  <view class="footer-link px">
+    <text class="logout-link" bindtap="onLogout">退出登录</text>
+  </view>
 </view>

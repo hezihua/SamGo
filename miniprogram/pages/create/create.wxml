@@ -1,67 +1,91 @@
-<view class="wrap">
-  <view class="card">
-    <text class="label">拼单标题</text>
-    <input
-      class="input"
-      placeholder="例如：周六山姆瑞士卷"
-      value="{{title}}"
-      bindinput="onTitleInput"
-    />
-
-    <text class="label">取货地址</text>
-    <input
-      class="input"
-      placeholder="小区/门店/约定地点"
-      value="{{deliveryAddress}}"
-      bindinput="onAddressInput"
-    />
-
-    <text class="label">截止日期</text>
-    <picker mode="date" value="{{date}}" start="{{today}}" bindchange="onDateChange">
-      <view class="picker">{{date || '请选择日期'}}</view>
-    </picker>
-
-    <text class="label">截止时间</text>
-    <picker mode="time" value="{{time}}" bindchange="onTimeChange">
-      <view class="picker">{{time}}</view>
-    </picker>
-
-    <text class="label">最少人数</text>
-    <input
-      class="input"
-      type="number"
-      value="{{minParticipants}}"
-      bindinput="onMinInput"
-    />
+<view class="page-create safe-bottom">
+  <view class="section-head px">
+    <view class="section-head-bar"></view>
+    <text class="section-head-title">基本信息</text>
   </view>
 
-  <view class="card products-card">
-    <text class="label">拼单商品（后台商品库，至少选 1 个）</text>
-    <text class="hint" wx:if="{{selectedCount > 0}}">已选 {{selectedCount}} 项</text>
-    <view wx:if="{{productsLoading}}" class="muted">加载商品…</view>
-    <view wx:elif="{{products.length == 0}}" class="muted">暂无商品，请先在 Web 后台添加</view>
-    <block wx:else>
+  <view class="card mx">
+    <view class="form-item">
+      <text class="form-label">拼单标题</text>
+      <input
+        class="form-input"
+        placeholder="例如：周六山姆瑞士卷"
+        value="{{title}}"
+        bindinput="onTitleInput"
+      />
+    </view>
+    <view class="form-item">
+      <text class="form-label">取货地址</text>
+      <input
+        class="form-input"
+        placeholder="小区 / 门店 / 约定地点"
+        value="{{deliveryAddress}}"
+        bindinput="onAddressInput"
+      />
+    </view>
+    <view class="form-row">
+      <view class="form-item half">
+        <text class="form-label">截止日期</text>
+        <picker mode="date" value="{{date}}" start="{{today}}" bindchange="onDateChange">
+          <view class="form-picker">{{date || '选择日期'}}</view>
+        </picker>
+      </view>
+      <view class="form-item half">
+        <text class="form-label">截止时间</text>
+        <picker mode="time" value="{{time}}" bindchange="onTimeChange">
+          <view class="form-picker">{{time}}</view>
+        </picker>
+      </view>
+    </view>
+    <view class="form-item">
+      <text class="form-label">最少人数</text>
+      <input
+        class="form-input"
+        type="number"
+        value="{{minParticipants}}"
+        bindinput="onMinInput"
+      />
+    </view>
+  </view>
+
+  <view class="section-head px">
+    <view class="section-head-bar"></view>
+    <text class="section-head-title">选择商品</text>
+    <text class="section-head-sub" wx:if="{{selectedCount > 0}}">已选 {{selectedCount}}</text>
+  </view>
+
+  <view class="card mx">
+    <view wx:if="{{productsLoading}}" class="muted center-pad">加载商品…</view>
+    <view wx:elif="{{products.length == 0}}" class="muted center-pad">暂无商品，请先在 Web 后台添加</view>
+    <view wx:else class="product-grid">
       <view
-        class="product-pick {{item.selected ? 'selected' : ''}}"
+        class="grid-item {{item.selected ? 'selected' : ''}}"
         wx:for="{{products}}"
         wx:key="id"
         data-id="{{item.id}}"
         bindtap="onToggleProduct"
       >
-        <text class="product-name">{{item.name}}</text>
-        <text class="product-meta">¥{{item.price}} · {{item.category}}</text>
-        <text class="check">{{item.selected ? '✓' : ''}}</text>
+        <image
+          wx:if="{{item.image_url}}"
+          class="grid-img"
+          src="{{item.image_url}}"
+          mode="aspectFill"
+        />
+        <view wx:else class="grid-img grid-img-ph">Sam</view>
+        <text class="grid-name">{{item.name}}</text>
+        <text class="grid-price">¥{{item.price}}</text>
+        <view class="grid-check">{{item.selected ? '✓' : ''}}</view>
       </view>
-    </block>
+    </view>
   </view>
 
-  <button
-    class="btn-primary submit"
-    loading="{{loading}}"
-    disabled="{{loading}}"
-    bindtap="onSubmit"
-  >
-    发布拼单
-  </button>
-  <text class="error" wx:if="{{error}}">{{error}}</text>
+  <view class="bottom-bar">
+    <view
+      class="btn-primary bottom-bar-btn {{loading ? 'is-disabled' : ''}}"
+      bindtap="onSubmit"
+    >
+      {{loading ? '发布中…' : '发布拼单'}}
+    </view>
+  </view>
+  <text class="error mx" wx:if="{{error}}">{{error}}</text>
 </view>

@@ -9,6 +9,16 @@ const STATUS_LABEL = {
   completed: "\u5df2\u5b8c\u6210",
 };
 
+function formatDeadlineShort(iso) {
+  if (!iso) return "";
+  const s = String(iso);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (m) {
+    return `${m[2]}/${m[3]} ${m[4]}:${m[5]}`;
+  }
+  return s.length > 16 ? s.slice(0, 16) : s;
+}
+
 function buildTeamGroups(rows) {
   const map = new Map();
   for (const row of rows || []) {
@@ -16,7 +26,11 @@ function buildTeamGroups(rows) {
       (row.profiles && row.profiles.nickname && row.profiles.nickname.trim()) ||
       "\u62fc\u53cb";
     if (!map.has(row.user_id)) {
-      map.set(row.user_id, { nickname: nick, items: [] });
+      map.set(row.user_id, {
+        nickname: nick,
+        avatarLetter: nick.charAt(0) || "\u62fc",
+        items: [],
+      });
     }
     map.get(row.user_id).items.push({
       id: row.id,
@@ -44,16 +58,16 @@ Page({
 
   onLoad(options) {
     const session = getSession();
-    if (!session?.access_token) {
+    if (!session || !session.access_token) {
       wx.redirectTo({ url: "/pages/login/login" });
       return;
     }
-    const orderId = options?.id;
+    const orderId = options && options.id;
     if (!orderId) {
       this.setData({ loading: false, error: "\u62fc\u5355\u4e0d\u5b58\u5728" });
       return;
     }
-    this._userId = session.user?.id;
+    this._userId = session.user && session.user.id;
     this._isLeader = Boolean(session.is_leader);
     this.setData({ orderId });
     this.loadAll();
@@ -95,6 +109,8 @@ Page({
       const teamRows = await rest(
         `order_items?group_order_id=eq.${orderId}&select=id,user_id,product_name,product_price,quantity,profiles(nickname)&order=created_at.asc`,
       );
+
+      order.deadlineShort = formatDeadlineShort(order.deadline);
 
       this.setData({
         order,
@@ -230,15 +246,16 @@ Page({
         `/api/group-orders/${this.data.orderId}/summary`,
         "GET",
       );
-      if (!data?.text) {
+      if (!data || !data.text) {
         throw new Error("\u751f\u6210\u5931\u8d25");
       }
       wx.setClipboardData({
         data: data.text,
         success: () => {
-          wx.showToast({
-            title: "\u5df2\u590d\u5236\uff0c\u53bb\u7fa4\u91cc\u7c98\u8d34",
-            icon: "none",
+          wx.showModal({
+            title: "\u5df2\u590d\u5236\u6c47\u603b\u6587\u6848",
+            content: "\u6253\u5f00\u5fae\u4fe1\u7fa4\uff0c\u957f\u6309\u8f93\u5165\u6846\u7c98\u8d34\u5373\u53ef\u53d1\u9001",
+            showCancel: false,
           });
         },
       });
@@ -250,9 +267,10 @@ Page({
   onShareAppMessage() {
     const { orderId, order } = this.data;
     return {
-      title: order?.title
-        ? `\u62fc\u5355\uff1a${order.title}`
-        : "SamGo \u62fc\u5355",
+      title:
+        order && order.title
+          ? `\u62fc\u5355\uff1a${order.title}`
+          : "SamGo \u62fc\u5355",
       path: `/pages/order/detail?id=${orderId}`,
     };
   },

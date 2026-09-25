@@ -1,101 +1,112 @@
-<view class="wrap">
-  <view wx:if="{{loading}}" class="muted center">加载中…</view>
-  <view wx:elif="{{error}}" class="error">{{error}}</view>
+<view class="page-detail safe-bottom">
+  <view wx:if="{{loading}}" class="state-box">
+    <text class="muted">加载中…</text>
+  </view>
+  <view wx:elif="{{error}}" class="state-box">
+    <text class="error-text">{{error}}</text>
+  </view>
   <block wx:else>
-    <view class="card">
-      <text class="title">{{order.title}}</text>
-      <text class="muted">截止 {{order.deadline}}</text>
-      <text class="muted">取货 {{order.delivery_address}}</text>
-      <text class="tag">{{statusLabel}}</text>
+    <view class="detail-hero">
+      <view class="hero-top">
+        <text class="hero-title">{{order.title}}</text>
+        <text class="hero-status">{{statusLabel}}</text>
+      </view>
+      <view class="hero-chips">
+        <view class="chip">
+          <text class="chip-k">截止</text>
+          <text class="chip-v">{{order.deadlineShort}}</text>
+        </view>
+        <view class="chip">
+          <text class="chip-k">取货</text>
+          <text class="chip-v">{{order.delivery_address}}</text>
+        </view>
+      </view>
     </view>
 
-    <view class="action-row">
-      <button
-        wx:if="{{canClose}}"
-        size="mini"
-        class="btn-warn"
-        bindtap="onCloseOrder"
-      >
-        截止拼单
+    <view class="action-float mx">
+      <button class="btn-primary action-btn" open-type="share">
+        <text class="btn-label">分享拼单到群</text>
       </button>
-      <button size="mini" class="btn-secondary" bindtap="onCopySummary">
-        复制汇总发群
-      </button>
+      <text class="action-hint">好友点开小程序卡片即可进入本页加购</text>
+      <view class="action-footer">
+        <text class="action-link" bindtap="onCopySummary">复制汇总文案（截止后对账用）</text>
+        <text wx:if="{{canClose}}" class="action-close" bindtap="onCloseOrder">截止拼单</text>
+      </view>
     </view>
 
-    <view class="card">
-      <text class="section-title">选购商品</text>
-      <view class="product-row" wx:for="{{products}}" wx:key="id">
+    <view class="section-head px section-first">
+      <view class="section-head-bar"></view>
+      <text class="section-head-title">选购商品</text>
+    </view>
+    <view class="product-list px">
+      <view class="sku-card" wx:for="{{products}}" wx:key="id">
         <image
           wx:if="{{item.image_url}}"
-          class="product-thumb"
+          class="sku-img"
           src="{{item.image_url}}"
           mode="aspectFill"
         />
-        <view wx:else class="product-thumb placeholder">图</view>
-        <view class="product-info">
-          <text class="product-name">{{item.name}}</text>
-          <text class="product-price">¥{{item.price}}</text>
+        <view wx:else class="sku-img sku-ph">Sam</view>
+        <view class="sku-body">
+          <text class="sku-name">{{item.name}}</text>
+          <text class="sku-price">¥{{item.price}}</text>
         </view>
         <button
+          class="sku-add btn-primary"
           size="mini"
-          class="btn-primary"
           data-id="{{item.id}}"
           data-name="{{item.name}}"
           bindtap="onAddProduct"
           disabled="{{!canAdd}}"
         >
-          加入
+          {{canAdd ? '加购' : '已截止'}}
         </button>
       </view>
     </view>
 
-    <view class="card">
-      <text class="section-title">我的选购</text>
-      <view wx:if="{{myItems.length === 0}}" class="muted">暂无</view>
-      <view class="item-row my-row" wx:for="{{myItems}}" wx:key="id">
-        <text class="item-text"
-          >{{item.product_name}} x{{item.quantity}}（¥{{item.product_price}}）</text
-        >
-        <view wx:if="{{canAdd}}" class="item-actions">
-          <button
-            size="mini"
-            class="btn-secondary"
+    <view class="section-head px">
+      <view class="section-head-bar"></view>
+      <text class="section-head-title">我的选购</text>
+    </view>
+    <view class="card mx">
+      <view wx:if="{{myItems.length === 0}}" class="empty-inline">还没有加购</view>
+      <view class="cart-line" wx:for="{{myItems}}" wx:key="id">
+        <view class="cart-info">
+          <text class="cart-name">{{item.product_name}}</text>
+          <text class="cart-sub">x{{item.quantity}} · ¥{{item.product_price}}</text>
+        </view>
+        <view wx:if="{{canAdd}}" class="cart-actions">
+          <text
+            class="link-btn"
             data-id="{{item.id}}"
             data-name="{{item.product_name}}"
             data-qty="{{item.quantity}}"
             bindtap="onEditMyItem"
+            >改数量</text
           >
-            改数量
-          </button>
-          <button
-            size="mini"
-            class="btn-warn"
-            data-id="{{item.id}}"
-            bindtap="onDeleteMyItem"
+          <text class="link-btn danger" data-id="{{item.id}}" bindtap="onDeleteMyItem"
+            >删除</text
           >
-            删除
-          </button>
         </view>
       </view>
     </view>
 
-    <view class="card">
-      <text class="section-title">全团选购</text>
-      <view wx:if="{{teamGroups.length === 0}}" class="muted">暂无</view>
-      <view
-        class="team-block"
-        wx:for="{{teamGroups}}"
-        wx:for-index="gidx"
-        wx:key="gidx"
-      >
-        <text class="team-name">{{item.nickname}}</text>
-        <view class="item-row" wx:for="{{item.items}}" wx:for-item="line" wx:key="id">
-          {{line.product_name}} x{{line.quantity}}（¥{{line.product_price}}）
+    <view class="section-head px">
+      <view class="section-head-bar"></view>
+      <text class="section-head-title">全团选购</text>
+    </view>
+    <view class="card mx">
+      <view wx:if="{{teamGroups.length === 0}}" class="empty-inline">暂无成员加购</view>
+      <view class="team-block" wx:for="{{teamGroups}}" wx:for-index="gidx" wx:key="gidx">
+        <view class="team-head">
+          <view class="team-avatar">{{item.avatarLetter}}</view>
+          <text class="team-name">{{item.nickname}}</text>
+        </view>
+        <view class="team-line" wx:for="{{item.items}}" wx:for-item="line" wx:key="id">
+          <text>{{line.product_name}}</text>
+          <text class="team-qty">x{{line.quantity}}</text>
         </view>
       </view>
     </view>
-
-    <button class="btn-primary share" open-type="share">分享给好友</button>
   </block>
 </view>

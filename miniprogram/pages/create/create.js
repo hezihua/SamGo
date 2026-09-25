@@ -38,7 +38,9 @@ Page({
   async loadProducts() {
     this.setData({ productsLoading: true, error: "" });
     try {
-      const rows = await rest("products?select=id,name,price,category&order=name.asc");
+      const rows = await rest(
+        "products?select=id,name,price,category,image_url&order=name.asc",
+      );
       const products = (rows || []).map((p) => ({ ...p, selected: false }));
       this.setData({ products, productsLoading: false });
     } catch (err) {
