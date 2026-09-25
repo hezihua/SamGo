@@ -78,6 +78,9 @@ Page({
     const userId = this._userId;
     this.setData({ loading: true, error: "" });
     try {
+      await requestWithAuth("/api/group-orders/close-expired", "POST").catch(
+        () => {},
+      );
       const orders = await rest(
         `group_orders?id=eq.${orderId}&select=id,title,status,deadline,delivery_address,min_participants,creator_id`,
       );

@@ -13,7 +13,7 @@
 - 登录与会话（含可选 `is_leader`）
 - 首页进行中拼单、发起拼单（信息 + 勾选商品）
 - 拼单详情：商品图、加购、我的选购（改数量/删除）、全团选购、分享
-- **截止拼单**：发起人或团长（`WECHAT_LEADER_OPENID`）→ `POST /api/group-orders/:id/close`
+- **截止拼单**：到 `deadline` 自动改为 `closed`（Cron + 打开列表/详情时同步）；发起人或团长仍可手动 `POST /api/group-orders/:id/close`
 - **复制汇总发群**：`GET /api/group-orders/:id/summary` → 剪贴板
 
 ### Web 管理
@@ -26,6 +26,8 @@
 |------|------|------|
 | POST | `/api/wechat/login` | 微信登录 |
 | POST | `/api/group-orders` | 创建拼单 + 关联商品 |
+| POST | `/api/group-orders/close-expired` | 登录用户触发：批量截止已过期拼单 |
+| GET/POST | `/api/cron/close-expired-orders` | Vercel Cron（`Authorization: Bearer CRON_SECRET`） |
 | POST | `/api/group-orders/:id/close` | 截止拼单 |
 | GET | `/api/group-orders/:id/summary` | 汇总文案 |
 | POST | `/api/order-items` | 加购 |
@@ -37,7 +39,7 @@
 
 ## 上线检查
 
-1. Next 部署 HTTPS（如 Vercel），配置与 `.env.local` 相同的环境变量
+1. Next 部署 HTTPS（如 Vercel），配置与 `.env.local` 相同的环境变量（含 `CRON_SECRET`，见 `vercel.json` 定时任务）
 2. 小程序 `config.js`：`apiBase` 改为生产域名
 3. 微信公众平台 **request 合法域名**：Next 域名 + Supabase 域名
 4. **downloadFile 合法域名**：若展示 OSS 商品图，添加 Bucket/CDN 域名

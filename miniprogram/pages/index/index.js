@@ -5,6 +5,7 @@ const {
   isAuthErrorMessage,
 } = require("../../utils/auth");
 const { fetchOpenOrders } = require("../../utils/supabase");
+const { requestWithAuth } = require("../../utils/api");
 
 const STATUS_LABEL = {
   open: "\u8fdb\u884c\u4e2d",
@@ -54,6 +55,9 @@ Page({
   async loadOrders() {
     this.setData({ loading: true, error: "" });
     try {
+      await requestWithAuth("/api/group-orders/close-expired", "POST").catch(
+        () => {},
+      );
       const rows = await fetchOpenOrders();
       const orders = (rows || [])
         .filter((o) => o.status === "open" || o.status === "closing")
