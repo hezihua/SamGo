@@ -14,7 +14,7 @@
 - 首页进行中拼单、发起拼单（信息 + 勾选商品）
 - 拼单详情：商品图、加减加购、我的选购、**全团按商品汇总**、全团选购（按人）、分享、**拼单小程序码**
 - 首页 **进行中 / 历史拼单**（我发起或参与且已截止）
-- **截止拼单**：到 `deadline` 自动改为 `closed`（Cron + 打开列表/详情时同步）；发起人或团长仍可手动 `POST /api/group-orders/:id/close`
+- **截止拼单**：到 `deadline` 自动改为 `closed`（每日 Cron + 打开列表/详情时同步）；发起人或团长仍可手动 `POST /api/group-orders/:id/close`
 - **复制汇总发群**：`GET /api/group-orders/:id/summary` → 剪贴板
 
 ### Web 管理
