@@ -31,4 +31,6 @@
 
 登录流程：`wx.login` → `POST /api/wechat/login` → 保存 Supabase session → 拉取拼单列表。
 
-团长在浏览器维护商品与价格：`http://localhost:3000/admin/products`（`.env.local` 配置 `ADMIN_PASSWORD`）。
+生产管理后台：https://sam-go-ochre.vercel.app/admin/products（Vercel 环境变量 `ADMIN_PASSWORD`）。
+
+域名清单见 [docs/WECHAT-DOMAINS.md](../docs/WECHAT-DOMAINS.md)。

@@ -43,7 +43,7 @@
 ## 上线检查
 
 1. Next 部署 HTTPS（如 Vercel），配置与 `.env.local` 相同的环境变量（含 `CRON_SECRET`，见 `vercel.json` 定时任务）
-2. 小程序 `config.js`：`apiBase` 改为生产域名
+2. 小程序 `config.js`：`apiBase` 为 `https://sam-go-ochre.vercel.app`；域名见 `docs/WECHAT-DOMAINS.md`
 3. 微信公众平台 **request 合法域名**：Next 域名 + Supabase 域名
 4. **downloadFile 合法域名**：若展示 OSS 商品图，添加 Bucket/CDN 域名
 5. 关闭开发工具的「不校验合法域名」后再真机验证
