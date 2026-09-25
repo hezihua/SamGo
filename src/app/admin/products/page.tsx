@@ -16,13 +16,30 @@ export default async function AdminProductsPage({
   }
 
   const { error } = await searchParams;
-  const admin = createAdminClient();
-  const { data: products, error: fetchError } = await admin
-    .from("products")
-    .select("id, name, price, category, unit, image_url, description")
-    .order("name", { ascending: true });
 
-  const rows = (products ?? []) as ProductRow[];
+  let rows: ProductRow[] = [];
+  let fetchError: { message: string } | null = null;
+
+  try {
+    const admin = createAdminClient();
+    const { data: products, error: dbError } = await admin
+      .from("products")
+      .select("id, name, price, category, unit, image_url, description")
+      .order("name", { ascending: true });
+
+    if (dbError) {
+      fetchError = dbError;
+    } else {
+      rows = (products ?? []) as ProductRow[];
+    }
+  } catch (err) {
+    fetchError = {
+      message:
+        err instanceof Error
+          ? err.message
+          : "无法连接 Supabase，请检查 Vercel 环境变量",
+    };
+  }
 
   return (
     <main style={styles.main}>
