@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { assertOrderEditable } from "@/lib/order-guard";
-import { userCanDecreaseOrderItems } from "@/lib/order-permissions";
+import { syncParticipantAfterOrderItemsChange } from "@/lib/participant-sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { userFromBearer } from "@/lib/request-user";
 
@@ -43,20 +43,6 @@ export async function PATCH(request: Request, context: RouteContext) {
     } catch (e) {
       const message = e instanceof Error ? e.message : "\u62fc\u5355\u4e0d\u53ef\u7f16\u8f91";
       return NextResponse.json({ error: message }, { status: 400 });
-    }
-
-    if (quantity < item.quantity) {
-      const canDecrease = await userCanDecreaseOrderItems(
-        admin,
-        user.id,
-        item.group_order_id
-      );
-      if (!canDecrease) {
-        return NextResponse.json(
-          { error: "\u53c2\u4e0e\u62fc\u5355\u53ea\u53ef\u52a0\u8d2d\uff0c\u5982\u9700\u51cf\u5c11\u8bf7\u8054\u7cfb\u53d1\u8d77\u4eba" },
-          { status: 403 }
-        );
-      }
     }
 
     const { data: updated, error: updateError } = await admin
@@ -111,18 +97,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const canDecrease = await userCanDecreaseOrderItems(
-      admin,
-      user.id,
-      item.group_order_id
-    );
-    if (!canDecrease) {
-      return NextResponse.json(
-        { error: "\u53c2\u4e0e\u62fc\u5355\u53ea\u53ef\u52a0\u8d2d\uff0c\u5982\u9700\u51cf\u5c11\u8bf7\u8054\u7cfb\u53d1\u8d77\u4eba" },
-        { status: 403 }
-      );
-    }
-
     const { error: deleteError } = await admin
       .from("order_items")
       .delete()
@@ -132,6 +106,12 @@ export async function DELETE(_request: Request, context: RouteContext) {
       console.error("[order-items delete]", deleteError);
       return NextResponse.json({ error: "\u5220\u9664\u5931\u8d25" }, { status: 500 });
     }
+
+    await syncParticipantAfterOrderItemsChange(
+      admin,
+      item.group_order_id,
+      user.id
+    );
 
     return NextResponse.json({ ok: true });
   } catch (err) {

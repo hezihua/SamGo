@@ -156,8 +156,8 @@ Page({
       }
       const canAdd = order.status === "open" || order.status === "closing";
       const isCreator = order.creator_id === userId;
-      const canMinus = isCreator || this._isLeader;
-      const canClose = canAdd && canMinus;
+      const canMinus = canAdd;
+      const canClose = canAdd && (isCreator || this._isLeader);
 
       let products = [];
       const links = await rest(
@@ -209,7 +209,7 @@ Page({
     if (this._qtyBusy) return;
     if (nextQty < currentQty && !this.data.canMinus) {
       wx.showToast({
-        title: "\u53c2\u4e0e\u62fc\u5355\u53ea\u53ef\u52a0\u8d2d",
+        title: "\u62fc\u5355\u5df2\u622a\u6b62\uff0c\u65e0\u6cd5\u51cf\u5c11",
         icon: "none",
       });
       return;
