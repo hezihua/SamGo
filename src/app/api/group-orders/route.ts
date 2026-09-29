@@ -66,7 +66,8 @@ export async function POST(request: Request) {
     const { data: catalogRows, error: catalogError } = await admin
       .from("products")
       .select("id")
-      .in("id", product_ids);
+      .in("id", product_ids)
+      .eq("review_status", "approved");
 
     if (catalogError) {
       console.error("[group-orders] products", catalogError);

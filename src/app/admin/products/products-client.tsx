@@ -1,7 +1,13 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createProduct, deleteProduct, updateProduct } from "./actions";
+import {
+  approveProduct,
+  createProduct,
+  deleteProduct,
+  rejectProduct,
+  updateProduct,
+} from "./actions";
 import { ImageUploadField } from "./image-upload-field";
 
 export type ProductRow = {
@@ -12,6 +18,9 @@ export type ProductRow = {
   unit: string;
   image_url: string | null;
   description: string | null;
+  review_status: "approved" | "pending" | "rejected";
+  created_at?: string;
+  profiles?: { nickname: string | null } | null;
 };
 
 type ModalState = { mode: "add" } | { mode: "edit"; product: ProductRow } | null;
@@ -22,6 +31,9 @@ type ProductsAdminProps = {
 
 export function ProductsAdmin({ products }: ProductsAdminProps) {
   const [modal, setModal] = useState<ModalState>(null);
+  const pending = products.filter((p) => p.review_status === "pending");
+  const approved = products.filter((p) => p.review_status === "approved");
+  const rejected = products.filter((p) => p.review_status === "rejected");
 
   const closeModal = useCallback(() => setModal(null), []);
 
@@ -37,7 +49,10 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
   return (
     <section style={styles.section}>
       <div style={styles.toolbar}>
-        <span style={styles.count}>共 {products.length} 件商品</span>
+        <span style={styles.count}>
+          已上架 {approved.length} 件
+          {pending.length > 0 ? ` · 待审核 ${pending.length}` : ""}
+        </span>
         <button
           type="button"
           style={styles.primaryButton}
@@ -46,8 +61,50 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
           新增商品
         </button>
       </div>
+      {pending.length > 0 ? (
+        <>
+          <h3 style={styles.sectionTitle}>待审核（小程序提交）</h3>
+          <ul style={styles.list}>
+            {pending.map((product) => (
+              <li key={product.id} style={styles.rowPending}>
+                <div style={styles.rowMain}>
+                  <span style={styles.rowName}>{product.name}</span>
+                  <span style={styles.rowPrice}>¥{product.price}</span>
+                  <span style={styles.tag}>{product.category}</span>
+                  <span style={styles.submitter}>
+                    提交人：{product.profiles?.nickname?.trim() || "微信用户"}
+                  </span>
+                </div>
+                <div style={styles.reviewActions}>
+                  <form action={approveProduct}>
+                    <input type="hidden" name="id" value={product.id} />
+                    <button type="submit" style={styles.primaryButton}>
+                      通过
+                    </button>
+                  </form>
+                  <form action={rejectProduct}>
+                    <input type="hidden" name="id" value={product.id} />
+                    <button type="submit" style={styles.secondaryButton}>
+                      驳回
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    style={styles.secondaryButton}
+                    onClick={() => setModal({ mode: "edit", product })}
+                  >
+                    编辑
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      <h3 style={styles.sectionTitle}>已上架</h3>
       <ul style={styles.list}>
-        {products.map((product) => (
+        {approved.map((product) => (
           <li key={product.id} style={styles.row}>
             <div style={styles.rowMain}>
               <span style={styles.rowName}>{product.name}</span>
@@ -65,8 +122,28 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
         ))}
       </ul>
 
-      {products.length === 0 ? (
+      {approved.length === 0 && pending.length === 0 ? (
         <p style={styles.empty}>暂无商品，点击「新增商品」添加</p>
+      ) : null}
+
+      {rejected.length > 0 ? (
+        <>
+          <h3 style={styles.sectionTitleMuted}>已驳回（{rejected.length}）</h3>
+          <ul style={styles.list}>
+            {rejected.map((product) => (
+              <li key={product.id} style={styles.rowMuted}>
+                <span style={styles.rowName}>{product.name}</span>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={() => setModal({ mode: "edit", product })}
+                >
+                  编辑
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : null}
 
       {modal ? (
@@ -208,6 +285,18 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     gap: 8,
   },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    margin: "20px 0 10px",
+    color: "#0f172a",
+  },
+  sectionTitleMuted: {
+    fontSize: 14,
+    fontWeight: 600,
+    margin: "24px 0 8px",
+    color: "#94a3b8",
+  },
   row: {
     display: "flex",
     justifyContent: "space-between",
@@ -217,6 +306,37 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     border: "1px solid #e2e8f0",
     background: "#fff",
+  },
+  rowPending: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    padding: "12px 14px",
+    borderRadius: 10,
+    border: "1px solid #fde68a",
+    background: "#fffbeb",
+  },
+  rowMuted: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    padding: "10px 14px",
+    borderRadius: 10,
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    opacity: 0.85,
+  },
+  reviewActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "flex-end",
+  },
+  submitter: {
+    width: "100%",
+    fontSize: 12,
+    color: "#64748b",
   },
   rowMain: {
     display: "flex",

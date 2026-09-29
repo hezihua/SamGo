@@ -1,15 +1,5 @@
 <view class="page-home safe-bottom">
-  <view class="home-header">
-    <view class="user-row">
-      <view class="avatar">{{userInitial}}</view>
-      <view class="user-meta">
-        <text class="user-greet">你好，{{user.nickname || '拼友'}}</text>
-        <text class="user-tip">看看群里进行中的拼单</text>
-      </view>
-    </view>
-  </view>
-
-  <view class="tabs px">
+  <view class="tabs px tabs-top">
     <text
       class="tab {{listTab === 'active' ? 'tab-on' : ''}}"
       data-tab="active"
@@ -24,14 +14,6 @@
     >
   </view>
 
-  <view class="section-head px">
-    <view class="section-head-bar"></view>
-    <text class="section-head-title">{{listTab === 'history' ? '已截止' : '进行中'}}</text>
-    <text class="section-head-sub" wx:if="{{!loading && orders.length > 0}}"
-      >{{orders.length}} 个</text
-    >
-  </view>
-
   <view wx:if="{{loading}}" class="state-box">
     <text class="muted">加载中…</text>
   </view>
@@ -40,8 +22,7 @@
   </view>
   <view wx:elif="{{orders.length === 0}}" class="empty-box">
     <view class="empty-icon"></view>
-    <text class="empty-title">{{listTab === 'history' ? '暂无历史拼单' : '还没有进行中的拼单'}}</text>
-    <text class="empty-desc">{{listTab === 'history' ? '参与或发起并已截止的拼单会出现在这里' : '发起一个，分享到微信群让大家选购'}}</text>
+    <text class="empty-title">{{listTab === 'history' ? '暂无历史' : '暂无进行中拼单'}}</text>
   </view>
   <view wx:else class="order-list px">
     <view
@@ -71,7 +52,4 @@
     <view class="btn-primary bottom-bar-btn" bindtap="onCreate">发起拼单</view>
   </view>
 
-  <view class="footer-link px">
-    <text class="logout-link" bindtap="onLogout">退出登录</text>
-  </view>
 </view>

@@ -58,6 +58,38 @@ async function requestWithAuth(path, method, body) {
   }
 }
 
+function uploadWithAuth(path, filePath) {
+  return ensureValidSession().then((session) => {
+    const url = `${getApiBase()}${path}`;
+    return new Promise((resolve, reject) => {
+      wx.uploadFile({
+        url,
+        filePath,
+        name: "file",
+        header: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        success: (res) => {
+          let data = {};
+          try {
+            data = JSON.parse(res.data || "{}");
+          } catch (_e) {
+            reject(new Error("上传失败"));
+            return;
+          }
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(data);
+            return;
+          }
+          reject(new Error((data && data.error) || "上传失败"));
+        },
+        fail: (err) => reject(err),
+      });
+    });
+  });
+}
+
 module.exports = {
   requestWithAuth,
+  uploadWithAuth,
 };

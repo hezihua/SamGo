@@ -1,8 +1,10 @@
 {
   "pages": [
+    "pages/home/home",
     "pages/login/login",
     "pages/index/index",
     "pages/create/create",
+    "pages/product-submit/product-submit",
     "pages/order/detail"
   ],
   "window": {

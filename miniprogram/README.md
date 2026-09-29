@@ -29,7 +29,11 @@
 
 微信开发者工具 → 导入目录 `miniprogram/` → 本地调试可勾选「不校验合法域名」。
 
-登录流程：`wx.login` → `POST /api/wechat/login` → 保存 Supabase session → 拉取拼单列表。
+入口页：`pages/home/home`（登录 + 进入拼单管理 / 商品管理）。体验版路径建议设为 `pages/home/home`。
+
+登录流程：`wx.login` → `POST /api/wechat/login` → 保存 Supabase session。
+
+商品审核：执行 `supabase/migrations/007_product_review.sql`（或 `pnpm db:apply:007`）。
 
 `config.js` 通过 `utils/resolve-api-base.js` **按环境选 apiBase**：开发者工具模拟器 → `http://127.0.0.1:3000`（需本机 `pnpm dev`）；体验版/正式版/手机预览 → `https://samgo.haylee.site`。真机调试本机 API 时在 `config.js` 设 `FORCE_API_BASE` 为电脑局域网地址。
 

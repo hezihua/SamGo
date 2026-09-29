@@ -12,7 +12,7 @@ function redirectAfterLogin() {
     wx.redirectTo({ url: `/pages/order/detail?id=${pending}` });
     return;
   }
-  wx.redirectTo({ url: "/pages/index/index" });
+  wx.redirectTo({ url: "/pages/home/home" });
 }
 
 Page({

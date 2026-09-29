@@ -23,15 +23,9 @@ function formatDeadlineShort(iso) {
   return s.length > 16 ? s.slice(0, 16) : s;
 }
 
-function userInitial(nickname) {
-  const n = (nickname || "\u62fc").trim();
-  return n.charAt(0) || "\u62fc";
-}
-
 Page({
   data: {
     user: null,
-    userInitial: "\u62fc",
     orders: [],
     listTab: "active",
     loading: true,
@@ -41,14 +35,11 @@ Page({
   async onShow() {
     try {
       const session = await ensureValidSession();
-      this.setData({
-        user: session.user,
-        userInitial: userInitial(session.user && session.user.nickname),
-      });
+      this.setData({ user: session.user });
       this.loadOrders();
     } catch (_err) {
       clearSession();
-      wx.redirectTo({ url: "/pages/login/login" });
+      wx.redirectTo({ url: "/pages/home/home" });
     }
   },
 
@@ -72,7 +63,7 @@ Page({
     } catch (err) {
       if (isAuthErrorMessage(err.message)) {
         clearSession();
-        wx.redirectTo({ url: "/pages/login/login" });
+        wx.redirectTo({ url: "/pages/home/home" });
         return;
       }
       this.setData({
@@ -96,11 +87,6 @@ Page({
     const id = e.currentTarget.dataset.id;
     if (!id) return;
     wx.navigateTo({ url: `/pages/order/detail?id=${id}` });
-  },
-
-  onLogout() {
-    clearSession();
-    wx.redirectTo({ url: "/pages/login/login" });
   },
 
   onPullDownRefresh() {

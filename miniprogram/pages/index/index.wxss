@@ -3,6 +3,10 @@
   padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
 }
 
+.tabs-top {
+  margin-top: 24rpx;
+}
+
 .px {
   padding-left: 32rpx;
   padding-right: 32rpx;
@@ -171,6 +175,14 @@
 .footer-link {
   text-align: center;
   padding: 24rpx 0 48rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.link-muted {
+  font-size: 26rpx;
+  color: var(--color-primary);
 }
 
 .logout-link {

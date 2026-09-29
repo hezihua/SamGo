@@ -127,7 +127,7 @@ Page({
       try {
         wx.setStorageSync(PENDING_ORDER_KEY, orderId);
       } catch (_e) {}
-      wx.redirectTo({ url: "/pages/login/login" });
+      wx.redirectTo({ url: "/pages/home/home" });
       return;
     }
     this._userId = session.user && session.user.id;

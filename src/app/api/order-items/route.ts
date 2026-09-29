@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       .from("products")
       .select("id, name, price")
       .eq("id", product_id)
+      .eq("review_status", "approved")
       .single();
 
     if (productError || !product) {

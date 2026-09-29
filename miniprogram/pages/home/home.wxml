@@ -1,0 +1,26 @@
+<view class="page-home">
+  <view class="hero">
+    <text class="hero-title">邻居拼单小分队</text>
+    <text class="hero-sub">SamGo</text>
+  </view>
+  <view class="user-bar mx" wx:if="{{loggedIn}}">
+    <view class="avatar">{{userInitial}}</view>
+    <text class="user-name">{{user.nickname || '拼友'}}</text>
+    <text class="logout" bindtap="onLogout">退出</text>
+  </view>
+  <view class="menu mx" wx:if="{{loggedIn}}">
+    <view class="menu-item" bindtap="onGoOrders">
+      <text class="menu-title">拼单管理</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onGoProducts">
+      <text class="menu-title">商品管理</text>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+  <view class="card mx login-card" wx:if="{{!loggedIn}}">
+    <input class="login-input" placeholder="昵称可选" value="{{nickname}}" bindinput="onNicknameInput" />
+    <button class="btn-primary login-btn" loading="{{loading}}" bindtap="onWechatLogin">微信一键登录</button>
+    <text class="login-error" wx:if="{{error}}">{{error}}</text>
+  </view>
+</view>

@@ -28,7 +28,7 @@ Page({
   onLoad() {
     const session = getSession();
     if (!session?.access_token) {
-      wx.redirectTo({ url: "/pages/login/login" });
+      wx.redirectTo({ url: "/pages/home/home" });
       return;
     }
     this.setData({ today: todayString() });
@@ -117,7 +117,7 @@ Page({
 
     const session = getSession();
     if (!session?.user?.id) {
-      wx.redirectTo({ url: "/pages/login/login" });
+      wx.redirectTo({ url: "/pages/home/home" });
       return;
     }
 
