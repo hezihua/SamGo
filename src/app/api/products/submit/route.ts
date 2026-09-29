@@ -19,6 +19,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!fields.image_url) {
+      return NextResponse.json(
+        { error: "\u8bf7\u4e0a\u4f20\u5546\u54c1\u56fe\u7247" },
+        { status: 400 }
+      );
+    }
+
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("products")

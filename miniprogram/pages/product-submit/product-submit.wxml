@@ -23,7 +23,7 @@
       <textarea class="form-textarea" value="{{description}}" bindinput="onDescInput" />
     </view>
     <view class="form-item form-item-last">
-      <text class="form-label">图片（选填）</text>
+      <text class="form-label">图片<text class="req">*</text></text>
       <view class="image-upload" bindtap="onChooseImage">
         <image wx:if="{{imageUrl}}" class="thumb" src="{{imageUrl}}" mode="aspectFill" />
         <view wx:else class="image-placeholder">

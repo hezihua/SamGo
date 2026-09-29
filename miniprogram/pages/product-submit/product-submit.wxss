@@ -9,6 +9,11 @@
   margin-top: 0;
 }
 
+.req {
+  color: var(--color-danger);
+  margin-left: 4rpx;
+}
+
 .pending-mini {
   margin-top: 16rpx;
   text-align: center;

@@ -84,6 +84,10 @@ Page({
       wx.showToast({ title: "\u8bf7\u586b\u5199\u6709\u6548\u4ef7\u683c", icon: "none" });
       return;
     }
+    if (!(this.data.imageUrl || "").trim()) {
+      wx.showToast({ title: "\u8bf7\u4e0a\u4f20\u5546\u54c1\u56fe\u7247", icon: "none" });
+      return;
+    }
 
     this.setData({ submitting: true });
     try {
@@ -93,7 +97,7 @@ Page({
         unit: (this.data.unit || "\u4ef6").trim() || "\u4ef6",
         category: (this.data.category || "\u5176\u4ed6").trim() || "\u5176\u4ed6",
         description: (this.data.description || "").trim() || undefined,
-        image_url: this.data.imageUrl || undefined,
+        image_url: this.data.imageUrl.trim(),
       });
       wx.showToast({ title: "\u5df2\u63d0\u4ea4\u5ba1\u6838", icon: "success" });
       this.setData({ name: "", price: "", description: "", imageUrl: "" });
