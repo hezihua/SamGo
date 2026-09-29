@@ -5,11 +5,11 @@
 1. 在 Supabase SQL Editor **按顺序**执行：
    - `supabase/migrations/001_initial_schema.sql`（若库尚未初始化）
    - `supabase/migrations/002_wechat_openid.sql`
-   - `supabase/migrations/004_drop_profile_trigger.sql`（登录 500 / `Database error creating new user` 时**先跑这个**）
-   - 或 `supabase/migrations/003_fix_handle_new_user.sql`（保留自动建 profile 的完整修复）
+   - `supabase/migrations/004_drop_profile_trigger.sql`（新库推荐；`pnpm db:apply:004`）
    - `supabase/migrations/005_leader_only_group_orders.sql`（拼单创建仅走 API，禁止客户端直写）
    - `supabase/migrations/006_group_order_products.sql`（发起拼单勾选商品）
-   - 本地一键（需 `.env.local` 配置 `SUPABASE_DB_URL`）：`pnpm db:apply:004`
+   - `supabase/migrations/007_product_review.sql`（`pnpm db:apply:007`）
+   - `supabase/migrations/008_group_order_product_price.sql`（本单成交价；`pnpm db:apply:008`）
 2. 在项目根目录 `.env.local` 配置：
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `WECHAT_MINI_APP_ID` / `WECHAT_MINI_APP_SECRET`
@@ -32,8 +32,6 @@
 入口页：`pages/home/home`（登录 + 进入拼单管理 / 商品管理）。体验版路径建议设为 `pages/home/home`。
 
 登录流程：`wx.login` → `POST /api/wechat/login` → 保存 Supabase session。
-
-商品审核：执行 `supabase/migrations/007_product_review.sql`（或 `pnpm db:apply:007`）。
 
 `config.js` 通过 `utils/resolve-api-base.js` **按环境选 apiBase**：开发者工具模拟器 → `http://127.0.0.1:3000`（需本机 `pnpm dev`）；体验版/正式版/手机预览 → `https://samgo.haylee.site`。真机调试本机 API 时在 `config.js` 设 `FORCE_API_BASE` 为电脑局域网地址。
 

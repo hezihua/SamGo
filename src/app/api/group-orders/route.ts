@@ -1,27 +1,10 @@
 import { NextResponse } from "next/server";
-import type { User } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-async function userFromRequest(request: Request): Promise<User | null> {
-  const header = request.headers.get("authorization");
-  if (!header?.startsWith("Bearer ")) {
-    return null;
-  }
-  const token = header.slice("Bearer ".length).trim();
-  if (!token) {
-    return null;
-  }
-  const admin = createAdminClient();
-  const { data, error } = await admin.auth.getUser(token);
-  if (error || !data.user) {
-    return null;
-  }
-  return data.user;
-}
+import { userFromBearer } from "@/lib/request-user";
 
 export async function POST(request: Request) {
   try {
-    const user = await userFromRequest(request);
+    const user = await userFromBearer(request);
     if (!user) {
       return NextResponse.json({ error: "\u8bf7\u5148\u767b\u5f55" }, { status: 401 });
     }
@@ -65,7 +48,7 @@ export async function POST(request: Request) {
 
     const { data: catalogRows, error: catalogError } = await admin
       .from("products")
-      .select("id")
+      .select("id, price")
       .in("id", product_ids)
       .eq("review_status", "approved");
 
@@ -118,10 +101,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const priceById = new Map(
+      (catalogRows ?? []).map((row) => [row.id, Number(row.price)])
+    );
     const linkRows = product_ids.map((product_id, index) => ({
       group_order_id: order.id,
       product_id,
       sort_order: index,
+      unit_price: priceById.get(product_id) ?? 0,
     }));
 
     const { error: linkError } = await admin.from("group_order_products").insert(linkRows);
@@ -129,9 +116,13 @@ export async function POST(request: Request) {
     if (linkError) {
       console.error("[group-orders] group_order_products", linkError);
       await admin.from("group_orders").delete().eq("id", order.id);
-      const hint = String(linkError.message || "").includes("group_order_products")
-        ? "\u8bf7\u5728 Supabase \u6267\u884c 006_group_order_products.sql"
-        : linkError.message || "\u5173\u8054\u5546\u54c1\u5931\u8d25";
+      const msg = String(linkError.message || "");
+      let hint = msg || "\u5173\u8054\u5546\u54c1\u5931\u8d25";
+      if (msg.includes("unit_price")) {
+        hint = "\u8bf7\u5728 Supabase \u6267\u884c 008_group_order_product_price.sql";
+      } else if (msg.includes("group_order_products")) {
+        hint = "\u8bf7\u5728 Supabase \u6267\u884c 006_group_order_products.sql";
+      }
       return NextResponse.json({ error: hint }, { status: 500 });
     }
 

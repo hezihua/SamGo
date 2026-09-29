@@ -1,5 +1,4 @@
 const {
-  getSession,
   clearSession,
   ensureValidSession,
   isAuthErrorMessage,

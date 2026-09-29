@@ -19,39 +19,28 @@ export default async function AdminProductsPage({
 
   let rows: ProductRow[] = [];
   let fetchError: { message: string } | null = null;
-  let migrationHint = false;
 
   try {
     const admin = createAdminClient();
-    const fullSelect =
-      "id, name, price, category, unit, image_url, description, review_status, created_at, created_by, profiles(nickname)";
-    let result = await admin
+    const { data: products, error: dbError } = await admin
       .from("products")
-      .select(fullSelect)
+      .select(
+        "id, name, price, category, unit, image_url, description, review_status, created_at, created_by, profiles(nickname)"
+      )
       .order("review_status", { ascending: true })
       .order("created_at", { ascending: false });
-
-    if (
-      result.error?.message?.includes("review_status") ||
-      result.error?.message?.includes("does not exist")
-    ) {
-      migrationHint = true;
-      result = await admin
-        .from("products")
-        .select("id, name, price, category, unit, image_url, description")
-        .order("name", { ascending: true });
-    }
-
-    const { data: products, error: dbError } = result;
 
     if (dbError) {
       fetchError = dbError;
     } else {
-      rows = (products ?? []).map((p) => ({
-        ...(p as ProductRow),
-        review_status:
-          (p as ProductRow).review_status ?? ("approved" as const),
-      }));
+      rows = (products ?? []).map((p) => {
+        const row = p as unknown as ProductRow & {
+          profiles?: { nickname: string | null } | { nickname: string | null }[];
+        };
+        const prof = row.profiles;
+        const profiles = Array.isArray(prof) ? prof[0] ?? null : prof ?? null;
+        return { ...row, profiles };
+      });
     }
   } catch (err) {
     fetchError = {
@@ -67,7 +56,9 @@ export default async function AdminProductsPage({
       <header style={styles.header}>
         <div>
           <h1 style={styles.h1}>商品库管理</h1>
-          <p style={styles.muted}>修改后，小程序拼单选购将使用最新价格</p>
+          <p style={styles.muted}>
+            价格为参考价；各拼单在小程序内单独设置成交价
+          </p>
         </div>
         <form action={adminLogout}>
           <button type="submit" style={styles.secondaryButton}>
@@ -87,15 +78,6 @@ export default async function AdminProductsPage({
       ) : null}
       {fetchError ? (
         <p style={styles.error}>加载商品失败：{fetchError.message}</p>
-      ) : null}
-      {migrationHint ? (
-        <p style={styles.warn}>
-          尚未执行数据库迁移 007（缺少 review_status）。请在 Supabase → SQL
-          Editor 运行{" "}
-          <code style={styles.code}>supabase/migrations/007_product_review.sql</code>
-          ，或在 .env.local 配置 SUPABASE_DB_URL 后执行{" "}
-          <code style={styles.code}>pnpm db:apply:007</code>。执行前小程序商品审核功能不可用。
-        </p>
       ) : null}
 
       <ProductsAdmin products={rows} />
@@ -129,15 +111,4 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
   },
   error: { color: "#dc2626", fontSize: 14, margin: "0 0 16px" },
-  warn: {
-    color: "#92400e",
-    fontSize: 13,
-    margin: "0 0 16px",
-    padding: "12px 14px",
-    background: "#fffbeb",
-    borderRadius: 8,
-    border: "1px solid #fde68a",
-    lineHeight: 1.5,
-  },
-  code: { fontSize: 12, fontFamily: "ui-monospace, monospace" },
 };

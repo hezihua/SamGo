@@ -1,28 +1,12 @@
 import { NextResponse } from "next/server";
-import type { User } from "@supabase/supabase-js";
 import { assertOrderEditable } from "@/lib/order-guard";
+import { getOrderUnitPrice } from "@/lib/group-order-product-price";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-async function userFromRequest(request: Request): Promise<User | null> {
-  const header = request.headers.get("authorization");
-  if (!header?.startsWith("Bearer ")) {
-    return null;
-  }
-  const token = header.slice("Bearer ".length).trim();
-  if (!token) {
-    return null;
-  }
-  const admin = createAdminClient();
-  const { data, error } = await admin.auth.getUser(token);
-  if (error || !data.user) {
-    return null;
-  }
-  return data.user;
-}
+import { userFromBearer } from "@/lib/request-user";
 
 export async function POST(request: Request) {
   try {
-    const user = await userFromRequest(request);
+    const user = await userFromBearer(request);
     if (!user) {
       return NextResponse.json({ error: "\u8bf7\u5148\u767b\u5f55" }, { status: 401 });
     }
@@ -69,6 +53,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "\u5546\u54c1\u4e0d\u5b58\u5728" }, { status: 404 });
     }
 
+    const orderPrice = await getOrderUnitPrice(admin, group_order_id, product_id);
+
     const { data: allowed, error: allowedError } = await admin
       .from("group_order_products")
       .select("product_id")
@@ -82,22 +68,10 @@ export async function POST(request: Request) {
     }
 
     if (!allowed) {
-      const { count, error: countError } = await admin
-        .from("group_order_products")
-        .select("product_id", { count: "exact", head: true })
-        .eq("group_order_id", group_order_id);
-
-      if (countError) {
-        console.error("[order-items] group_order_products count", countError);
-        return NextResponse.json({ error: "\u6821\u9a8c\u5546\u54c1\u5931\u8d25" }, { status: 500 });
-      }
-
-      if (count && count > 0) {
-        return NextResponse.json(
-          { error: "\u8be5\u5546\u54c1\u672a\u7eb3\u5165\u672c\u6b21\u62fc\u5355" },
-          { status: 400 }
-        );
-      }
+      return NextResponse.json(
+        { error: "\u8be5\u5546\u54c1\u672a\u7eb3\u5165\u672c\u6b21\u62fc\u5355" },
+        { status: 400 }
+      );
     }
 
     const { error: participantError } = await admin.from("participants").upsert(
@@ -119,7 +93,7 @@ export async function POST(request: Request) {
         group_order_id,
         user_id: user.id,
         product_name: product.name,
-        product_price: product.price,
+        product_price: orderPrice?.unit_price ?? product.price,
         quantity,
       })
       .select()

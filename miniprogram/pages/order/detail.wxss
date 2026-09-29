@@ -180,11 +180,36 @@
   line-height: 1.4;
 }
 
-.sku-price {
-  display: block;
+.sku-price-row {
   margin-top: 10rpx;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12rpx 16rpx;
+}
+
+.sku-price {
   font-size: 34rpx;
   color: var(--color-accent);
+  font-weight: 700;
+}
+
+.sku-ref {
+  font-size: 22rpx;
+  color: var(--color-muted, #888);
+}
+
+.sku-edit-price {
+  font-size: 24rpx;
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 4rpx 12rpx;
+  border: 1rpx solid rgba(0, 136, 221, 0.35);
+  border-radius: 8rpx;
+}
+
+.chip-highlight .chip-v {
+  font-size: 32rpx;
   font-weight: 700;
 }
 

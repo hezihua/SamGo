@@ -66,6 +66,14 @@ function buildTeamGroups(rows) {
   return Array.from(map.values());
 }
 
+function formatMyAmount(myItems) {
+  let sum = 0;
+  for (const row of myItems || []) {
+    sum += Number(row.product_price) * (row.quantity || 0);
+  }
+  return sum.toFixed(2);
+}
+
 function buildProductTotals(rows) {
   const map = new Map();
   for (const row of rows || []) {
@@ -105,10 +113,12 @@ Page({
     teamGroups: [],
     productTotals: [],
     totalAmount: "0.00",
+    myAmount: "0.00",
     statusLabel: "",
     canAdd: false,
     canMinus: false,
     canClose: false,
+    canEditPrice: false,
     loading: true,
     error: "",
     wxacodeVisible: false,
@@ -158,16 +168,27 @@ Page({
       const isCreator = order.creator_id === userId;
       const canMinus = canAdd;
       const canClose = canAdd && (isCreator || this._isLeader);
+      const canEditPrice = canAdd && isCreator;
 
       let products = [];
       const links = await rest(
-        `group_order_products?group_order_id=eq.${orderId}&select=sort_order,products(id,name,price,image_url,category,unit)&order=sort_order.asc`,
+        `group_order_products?group_order_id=eq.${orderId}&select=sort_order,unit_price,products(id,name,price,image_url,category,unit)&order=sort_order.asc`,
       );
-      if (Array.isArray(links) && links.length > 0) {
-        products = links.map((row) => row.products).filter(Boolean);
-      } else {
-        products = await rest("products?select=*&order=name.asc");
-      }
+      products = (Array.isArray(links) ? links : [])
+        .map((row) => {
+          const p = row.products;
+          if (!p) return null;
+          const unit =
+            row.unit_price != null ? Number(row.unit_price) : Number(p.price);
+          const ref = Number(p.price);
+          return {
+            ...p,
+            price: unit,
+            referencePrice: ref,
+            showReferencePrice: unit !== ref,
+          };
+        })
+        .filter(Boolean);
 
       const myItemsRaw = userId
         ? await rest(
@@ -191,10 +212,12 @@ Page({
         teamGroups: buildTeamGroups(teamRows),
         productTotals: totals.list,
         totalAmount: totals.totalAmount,
+        myAmount: formatMyAmount(myItems),
         statusLabel: STATUS_LABEL[order.status] || order.status,
         canAdd,
         canMinus,
         canClose,
+        canEditPrice,
         loading: false,
       });
     } catch (err) {
@@ -237,6 +260,39 @@ Page({
     } finally {
       this._qtyBusy = false;
     }
+  },
+
+  onEditPrice(e) {
+    if (!this.data.canEditPrice) return;
+    const productId = e.currentTarget.dataset.productId;
+    const price = e.currentTarget.dataset.price;
+    if (!productId) return;
+    wx.showModal({
+      title: "\u672c\u5355\u6210\u4ea4\u4ef7",
+      content: "\u4ec5\u672c\u6b21\u62fc\u5355\u751f\u6548\uff0c\u5df2\u52a0\u8d2d\u4f1a\u540c\u6b65\u66f4\u65b0",
+      editable: true,
+      placeholderText: String(price),
+      success: async (res) => {
+        if (!res.confirm) return;
+        const raw = String(res.content || "").trim();
+        const val = Number.parseFloat(raw);
+        if (!Number.isFinite(val) || val < 0) {
+          wx.showToast({ title: "\u8bf7\u586b\u5199\u6709\u6548\u4ef7\u683c", icon: "none" });
+          return;
+        }
+        try {
+          await requestWithAuth(
+            `/api/group-orders/${this.data.orderId}/products/${productId}`,
+            "PATCH",
+            { unit_price: val },
+          );
+          await this.loadAll({ silent: true });
+          wx.showToast({ title: "\u5df2\u66f4\u65b0", icon: "success" });
+        } catch (err) {
+          wx.showToast({ title: err.message || "\u5931\u8d25", icon: "none" });
+        }
+      },
+    });
   },
 
   onQtyPlus(e) {
