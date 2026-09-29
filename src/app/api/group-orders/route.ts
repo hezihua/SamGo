@@ -15,7 +15,6 @@ export async function POST(request: Request) {
       title?: string;
       delivery_address?: string;
       deadline?: string;
-      min_participants?: number;
       product_ids?: string[];
     };
 
@@ -29,11 +28,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    const min_participants =
-      typeof body.min_participants === "number" && body.min_participants >= 2
-        ? body.min_participants
-        : 2;
 
     const product_ids = Array.isArray(body.product_ids)
       ? [...new Set(body.product_ids.map((id) => id?.trim()).filter(Boolean))]
@@ -70,7 +64,7 @@ export async function POST(request: Request) {
         title,
         delivery_address,
         deadline,
-        min_participants,
+        min_participants: 1,
         creator_id: user.id,
         status: "open",
       })
@@ -81,22 +75,6 @@ export async function POST(request: Request) {
       console.error("[group-orders]", orderError);
       return NextResponse.json(
         { error: orderError?.message || "\u521b\u5efa\u62fc\u5355\u5931\u8d25" },
-        { status: 500 }
-      );
-    }
-
-    const { error: participantError } = await admin.from("participants").upsert(
-      {
-        group_order_id: order.id,
-        user_id: user.id,
-      },
-      { onConflict: "group_order_id,user_id" }
-    );
-
-    if (participantError) {
-      console.error("[group-orders] participant", participantError);
-      return NextResponse.json(
-        { error: "\u521b\u5efa\u62fc\u5355\u6210\u529f\u4f46\u52a0\u5165\u53c2\u4e0e\u8005\u5931\u8d25" },
         { status: 500 }
       );
     }

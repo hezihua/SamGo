@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isGroupOrderOpen } from "@/lib/group-order-status";
 import { isLeaderOpenId } from "@/lib/leader";
 import { userFromBearer } from "@/lib/request-user";
 
@@ -29,7 +30,7 @@ export async function POST(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "\u62fc\u5355\u4e0d\u5b58\u5728" }, { status: 404 });
     }
 
-    if (order.status !== "open" && order.status !== "closing") {
+    if (!isGroupOrderOpen(order.status)) {
       return NextResponse.json({ error: "\u62fc\u5355\u5df2\u622a\u6b62" }, { status: 400 });
     }
 

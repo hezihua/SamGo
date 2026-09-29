@@ -3,7 +3,7 @@
 ## 已锁定规则
 
 1. **登录用户均可发起拼单**：走服务端 `POST /api/group-orders`；发起时须从后台 `products` 勾选本单商品（`group_order_products`）。
-2. **价格仅来自商品库**：加购只提交 `product_id` 与数量；服务端从 `products` 读价写入 `order_items`。
+2. **价格**：商品库为参考价；本单成交价在 `group_order_products.unit_price`；加购写入 `order_items.product_price`。
 3. **成员须微信登录**：`wx.login` → `POST /api/wechat/login`；API 使用 Bearer 鉴权。
 
 ## 功能清单
@@ -13,7 +13,8 @@
 - 登录与会话（含可选 `is_leader`）
 - 首页进行中拼单、发起拼单（信息 + 勾选商品）
 - 拼单详情：商品图、加减加购、我的选购、**全团按商品汇总**、全团选购（按人）、分享、**拼单小程序码**
-- 拼单管理 **进行中 / 历史**：仅 **我发起、或参与过**（含加购）的拼单；他人拼单通过 **群分享卡片 / 小程序码** 进入，不会出现在全站列表
+- 拼单管理 **进行中 / 历史**：**我发起的**，或 **加购过的**；仅点开分享不算参与。他人通过 **群分享卡片 / 小程序码** 进入详情
+- 拼单状态仅 **进行中（open）** / **已截止（closed）**；无最少成团人数
 - **截止拼单**：到 `deadline` 自动改为 `closed`（每日 Cron + 打开列表/详情时同步）；发起人或团长仍可手动 `POST /api/group-orders/:id/close`
 - **复制汇总发群**：`GET /api/group-orders/:id/summary` → 剪贴板
 

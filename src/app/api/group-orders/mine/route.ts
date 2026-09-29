@@ -6,24 +6,12 @@ import { userFromBearer } from "@/lib/request-user";
 const ORDER_SELECT =
   "id,title,status,deadline,delivery_address,created_at,creator_id";
 
+/** 我发起的 + 加购过的（不含仅点开详情） */
 async function gatherMyOrderIds(
   admin: SupabaseClient,
   userId: string
 ): Promise<string[]> {
   const idSet = new Set<string>();
-
-  const { data: participantRows, error: partError } = await admin
-    .from("participants")
-    .select("group_order_id")
-    .eq("user_id", userId);
-
-  if (partError) {
-    throw partError;
-  }
-
-  for (const row of participantRows ?? []) {
-    idSet.add(row.group_order_id);
-  }
 
   const { data: createdRows, error: createdError } = await admin
     .from("group_orders")
@@ -74,7 +62,7 @@ export async function GET(request: Request) {
     const statuses =
       scope === "history"
         ? (["closed", "completed"] as const)
-        : (["open", "closing"] as const);
+        : (["open", "closing"] as const); // closing：010 迁移前遗留
 
     const { data: orders, error: ordersError } = await admin
       .from("group_orders")

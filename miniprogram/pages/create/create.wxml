@@ -37,15 +37,6 @@
         </picker>
       </view>
     </view>
-    <view class="form-item">
-      <text class="form-label">最少人数</text>
-      <input
-        class="form-input"
-        type="number"
-        value="{{minParticipants}}"
-        bindinput="onMinInput"
-      />
-    </view>
   </view>
 
   <view class="section-head px">

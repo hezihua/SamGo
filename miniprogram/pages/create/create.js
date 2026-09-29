@@ -16,7 +16,6 @@ Page({
     deliveryAddress: "",
     date: "",
     time: "18:00",
-    minParticipants: "2",
     today: "",
     products: [],
     productsLoading: true,
@@ -77,13 +76,8 @@ Page({
     this.setData({ time: e.detail.value });
   },
 
-  onMinInput(e) {
-    this.setData({ minParticipants: e.detail.value });
-  },
-
   onSubmit() {
-    const { title, deliveryAddress, date, time, minParticipants, loading } =
-      this.data;
+    const { title, deliveryAddress, date, time, loading } = this.data;
     if (loading) return;
 
     const trimmedTitle = (title || "").trim();
@@ -98,12 +92,6 @@ Page({
     }
     if (!date) {
       this.setData({ error: "\u8bf7\u9009\u62e9\u622a\u6b62\u65e5\u671f" });
-      return;
-    }
-
-    const min = parseInt(minParticipants, 10);
-    if (!min || min < 2) {
-      this.setData({ error: "\u6700\u5c11\u4eba\u6570\u81f3\u5c11\u4e3a 2" });
       return;
     }
 
@@ -129,7 +117,6 @@ Page({
       title: trimmedTitle,
       delivery_address: trimmedAddress,
       deadline,
-      min_participants: min,
       product_ids,
     })
       .then((result) => {

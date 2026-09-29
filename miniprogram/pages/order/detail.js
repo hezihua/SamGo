@@ -5,12 +5,14 @@ const { resolveOrderIdFromOptions } = require("../../utils/order-scene");
 
 const PENDING_ORDER_KEY = "samgo_pending_order_id";
 
-const STATUS_LABEL = {
-  open: "\u8fdb\u884c\u4e2d",
-  closing: "\u5373\u5c06\u622a\u6b62",
-  closed: "\u5df2\u622a\u6b62",
-  completed: "\u5df2\u5b8c\u6210",
-};
+function orderStatusLabel(status) {
+  if (status === "open" || status === "closing") return "\u8fdb\u884c\u4e2d";
+  return "\u5df2\u622a\u6b62";
+}
+
+function isOrderOpen(status) {
+  return status === "open" || status === "closing";
+}
 
 function formatDeadlineShort(iso) {
   if (!iso) return "";
@@ -158,13 +160,13 @@ Page({
         () => {},
       );
       const orders = await rest(
-        `group_orders?id=eq.${orderId}&select=id,title,status,deadline,delivery_address,min_participants,creator_id`,
+        `group_orders?id=eq.${orderId}&select=id,title,status,deadline,delivery_address,creator_id`,
       );
       const order = Array.isArray(orders) ? orders[0] : null;
       if (!order) {
         throw new Error("\u62fc\u5355\u4e0d\u5b58\u5728");
       }
-      const canAdd = order.status === "open" || order.status === "closing";
+      const canAdd = isOrderOpen(order.status);
       const isCreator = order.creator_id === userId;
       const canMinus = canAdd;
       const canClose = canAdd && (isCreator || this._isLeader);
@@ -213,7 +215,7 @@ Page({
         productTotals: totals.list,
         totalAmount: totals.totalAmount,
         myAmount: formatMyAmount(myItems),
-        statusLabel: STATUS_LABEL[order.status] || order.status,
+        statusLabel: orderStatusLabel(order.status),
         canAdd,
         canMinus,
         canClose,

@@ -23,7 +23,7 @@
   <view wx:elif="{{orders.length === 0}}" class="empty-box">
     <view class="empty-icon"></view>
     <text class="empty-title">{{listTab === 'history' ? '暂无历史拼单' : '暂无进行中的拼单'}}</text>
-    <text wx:if="{{listTab === 'active'}}" class="empty-hint muted">我发起或参与过的会出现在这里；从群聊分享卡片进入即可加购</text>
+    <text wx:if="{{listTab === 'active'}}" class="empty-hint muted">我发起的，或加购过的拼单会在这里；其他人从群聊分享卡片进入</text>
   </view>
   <view wx:else class="order-list px">
     <view
@@ -35,7 +35,7 @@
     >
       <view class="order-card-top">
         <text class="order-title">{{item.title}}</text>
-        <text class="tag {{item.status === 'open' || item.status === 'closing' ? 'tag-open' : 'tag-closed'}}">{{item.statusLabel}}</text>
+        <text class="tag {{item.isOpen ? 'tag-open' : 'tag-closed'}}">{{item.statusLabel}}</text>
       </view>
       <view class="order-meta-row">
         <text class="meta-icon">⏱</text>

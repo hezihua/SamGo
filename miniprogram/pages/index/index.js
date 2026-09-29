@@ -5,12 +5,14 @@ const {
 } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
 
-const STATUS_LABEL = {
-  open: "\u8fdb\u884c\u4e2d",
-  closing: "\u5373\u5c06\u622a\u6b62",
-  closed: "\u5df2\u622a\u6b62",
-  completed: "\u5df2\u5b8c\u6210",
-};
+function orderStatusLabel(status) {
+  if (status === "open" || status === "closing") return "\u8fdb\u884c\u4e2d";
+  return "\u5df2\u622a\u6b62";
+}
+
+function isOrderOpen(status) {
+  return status === "open" || status === "closing";
+}
 
 function formatDeadlineShort(iso) {
   if (!iso) return "";
@@ -55,7 +57,8 @@ Page({
       );
       const orders = (data.orders || []).map((o) => ({
           ...o,
-          statusLabel: STATUS_LABEL[o.status] || o.status,
+          statusLabel: orderStatusLabel(o.status),
+          isOpen: isOrderOpen(o.status),
           deadlineShort: formatDeadlineShort(o.deadline),
         }));
       this.setData({ orders, loading: false });

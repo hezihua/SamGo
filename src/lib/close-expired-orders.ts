@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isGroupOrderOpen } from "@/lib/group-order-status";
 
+/** 未跑 010 迁移前库中可能仍有 closing */
 const ACTIVE_STATUSES = ["open", "closing"] as const;
 
 export async function closeAllExpiredOrders(
@@ -35,9 +37,7 @@ export async function closeOrderIfExpired(
     throw new Error("\u62fc\u5355\u4e0d\u5b58\u5728");
   }
 
-  const active = ACTIVE_STATUSES.includes(
-    order.status as (typeof ACTIVE_STATUSES)[number],
-  );
+  const active = isGroupOrderOpen(order.status);
   const expired = Date.parse(order.deadline) <= Date.now();
 
   if (active && expired) {
