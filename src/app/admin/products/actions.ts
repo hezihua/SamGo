@@ -64,7 +64,7 @@ export async function approveProduct(formData: FormData) {
   const admin = createAdminClient();
   const { error } = await admin
     .from("products")
-    .update({ review_status: "approved" })
+    .update({ review_status: "approved", review_note: null })
     .eq("id", id)
     .eq("review_status", "pending");
 
@@ -83,10 +83,13 @@ export async function rejectProduct(formData: FormData) {
     redirect("/admin/products?error=invalid");
   }
 
+  const rawNote = String(formData.get("review_note") ?? "").trim();
+  const review_note = rawNote ? rawNote.slice(0, 500) : null;
+
   const admin = createAdminClient();
   const { error } = await admin
     .from("products")
-    .update({ review_status: "rejected" })
+    .update({ review_status: "rejected", review_note })
     .eq("id", id)
     .eq("review_status", "pending");
 

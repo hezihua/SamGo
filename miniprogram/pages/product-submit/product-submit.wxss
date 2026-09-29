@@ -211,3 +211,42 @@
   padding: 6rpx 20rpx;
   border-radius: 999rpx;
 }
+
+.section-head-bar-danger {
+  background: var(--color-danger, #dc2626);
+}
+
+.pending-reject-note {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--color-danger, #dc2626);
+  line-height: 1.45;
+}
+
+.pending-action {
+  flex-shrink: 0;
+  font-size: 26rpx;
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 8rpx 16rpx;
+}
+
+.resubmit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+  padding: 20rpx 24rpx;
+  background: #eff6ff;
+  border-radius: var(--radius-md, 12rpx);
+  font-size: 24rpx;
+  color: var(--color-primary);
+}
+
+.resubmit-cancel {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+}

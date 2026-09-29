@@ -25,7 +25,7 @@ export default async function AdminProductsPage({
     const { data: products, error: dbError } = await admin
       .from("products")
       .select(
-        "id, name, price, category, unit, image_url, description, review_status, created_at, created_by, profiles(nickname)"
+        "id, name, price, category, unit, image_url, description, review_status, review_note, created_at, created_by, profiles(nickname)"
       )
       .order("review_status", { ascending: true })
       .order("created_at", { ascending: false });

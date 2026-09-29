@@ -1,4 +1,9 @@
 <view class="page-submit safe-bottom">
+  <view wx:if="{{resubmitId}}" class="resubmit-banner mx">
+    <text>正在修改未通过的商品，改好后点下方提交</text>
+    <text class="resubmit-cancel" bindtap="onCancelResubmit">取消</text>
+  </view>
+
   <view class="card mx form-card form-card-top">
     <view class="form-item">
       <text class="form-label">名称</text>
@@ -34,10 +39,43 @@
       </view>
     </view>
   </view>
-  <view class="pending-mini mx" wx:if="{{pending.length > 0}}">
-    <text class="pending-mini-label">待审核 {{pending.length}} 条</text>
+
+  <view wx:if="{{rejectedList.length > 0}}" class="section-head px pending-head">
+    <view class="section-head-bar section-head-bar-danger"></view>
+    <text class="section-head-title">审核未通过</text>
   </view>
+  <view wx:if="{{rejectedList.length > 0}}" class="card mx pending-card">
+    <view class="pending-row" wx:for="{{rejectedList}}" wx:key="id">
+      <view class="pending-main">
+        <text class="pending-name">{{item.name}}</text>
+        <text wx:if="{{item.review_note}}" class="pending-reject-note">{{item.review_note}}</text>
+        <text wx:else class="pending-reject-note muted">管理员未填写原因，请修改后重新提交</text>
+      </view>
+      <text
+        class="pending-action"
+        data-id="{{item.id}}"
+        bindtap="onEditRejected"
+      >修改</text>
+    </view>
+  </view>
+
+  <view wx:if="{{pendingList.length > 0}}" class="section-head px pending-head">
+    <view class="section-head-bar"></view>
+    <text class="section-head-title">待审核</text>
+  </view>
+  <view wx:if="{{pendingList.length > 0}}" class="card mx pending-card">
+    <view class="pending-row" wx:for="{{pendingList}}" wx:key="id">
+      <view class="pending-main">
+        <text class="pending-name">{{item.name}}</text>
+        <text class="pending-meta">等待管理员审核</text>
+      </view>
+      <text class="pending-tag">审核中</text>
+    </view>
+  </view>
+
   <view class="bottom-bar">
-    <view class="btn-primary bottom-bar-btn {{submitting ? 'is-disabled' : ''}}" bindtap="onSubmit">{{submitting ? '提交中…' : '提交审核'}}</view>
+    <view class="btn-primary bottom-bar-btn {{submitting ? 'is-disabled' : ''}}" bindtap="onSubmit">
+      {{submitting ? '提交中…' : (resubmitId ? '重新提交审核' : '提交审核')}}
+    </view>
   </view>
 </view>

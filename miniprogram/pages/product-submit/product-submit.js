@@ -9,26 +9,31 @@ Page({
     category: "\u5176\u4ed6",
     description: "",
     imageUrl: "",
-    pending: [],
+    pendingList: [],
+    rejectedList: [],
+    resubmitId: "",
     submitting: false,
   },
 
   async onShow() {
     try {
       await ensureValidSession();
-      this.loadPending();
+      this.loadSubmissions();
     } catch (_e) {
       clearSession();
       wx.redirectTo({ url: "/pages/home/home" });
     }
   },
 
-  async loadPending() {
+  async loadSubmissions() {
     try {
       const data = await requestWithAuth("/api/products/my-submissions", "GET");
-      this.setData({ pending: data.submissions || [] });
+      const rows = data.submissions || [];
+      const pendingList = rows.filter((r) => r.review_status === "pending");
+      const rejectedList = rows.filter((r) => r.review_status === "rejected");
+      this.setData({ pendingList, rejectedList });
     } catch (_e) {
-      this.setData({ pending: [] });
+      this.setData({ pendingList: [], rejectedList: [] });
     }
   },
 
@@ -72,6 +77,35 @@ Page({
     });
   },
 
+  onEditRejected(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = (this.data.rejectedList || []).find((r) => r.id === id);
+    if (!item) return;
+    this.setData({
+      resubmitId: item.id,
+      name: item.name || "",
+      price: item.price != null ? String(item.price) : "",
+      unit: item.unit || "\u4ef6",
+      category: item.category || "\u5176\u4ed6",
+      description: item.description || "",
+      imageUrl: item.image_url || "",
+    });
+    wx.pageScrollTo({ scrollTop: 0, duration: 200 });
+    wx.showToast({ title: "\u5df2\u586b\u5165\u8868\u5355\uff0c\u4fee\u6539\u540e\u70b9\u63d0\u4ea4", icon: "none" });
+  },
+
+  onCancelResubmit() {
+    this.setData({
+      resubmitId: "",
+      name: "",
+      price: "",
+      unit: "\u4ef6",
+      category: "\u5176\u4ed6",
+      description: "",
+      imageUrl: "",
+    });
+  },
+
   async onSubmit() {
     if (this.data.submitting) return;
     const name = (this.data.name || "").trim();
@@ -89,19 +123,37 @@ Page({
       return;
     }
 
+    const payload = {
+      name,
+      price,
+      unit: (this.data.unit || "\u4ef6").trim() || "\u4ef6",
+      category: (this.data.category || "\u5176\u4ed6").trim() || "\u5176\u4ed6",
+      description: (this.data.description || "").trim() || undefined,
+      image_url: this.data.imageUrl.trim(),
+    };
+
+    const resubmitId = (this.data.resubmitId || "").trim();
     this.setData({ submitting: true });
     try {
-      await requestWithAuth("/api/products/submit", "POST", {
-        name,
-        price,
-        unit: (this.data.unit || "\u4ef6").trim() || "\u4ef6",
-        category: (this.data.category || "\u5176\u4ed6").trim() || "\u5176\u4ed6",
-        description: (this.data.description || "").trim() || undefined,
-        image_url: this.data.imageUrl.trim(),
+      if (resubmitId) {
+        await requestWithAuth(
+          `/api/products/submissions/${resubmitId}`,
+          "PATCH",
+          payload,
+        );
+        wx.showToast({ title: "\u5df2\u91cd\u65b0\u63d0\u4ea4", icon: "success" });
+      } else {
+        await requestWithAuth("/api/products/submit", "POST", payload);
+        wx.showToast({ title: "\u5df2\u63d0\u4ea4\u5ba1\u6838", icon: "success" });
+      }
+      this.setData({
+        name: "",
+        price: "",
+        description: "",
+        imageUrl: "",
+        resubmitId: "",
       });
-      wx.showToast({ title: "\u5df2\u63d0\u4ea4\u5ba1\u6838", icon: "success" });
-      this.setData({ name: "", price: "", description: "", imageUrl: "" });
-      this.loadPending();
+      this.loadSubmissions();
     } catch (err) {
       wx.showToast({ title: err.message || "\u63d0\u4ea4\u5931\u8d25", icon: "none" });
     } finally {

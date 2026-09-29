@@ -19,6 +19,7 @@ export type ProductRow = {
   image_url: string | null;
   description: string | null;
   review_status: "approved" | "pending" | "rejected";
+  review_note?: string | null;
   created_at?: string;
   profiles?: { nickname: string | null } | null;
 };
@@ -82,9 +83,16 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
                       通过
                     </button>
                   </form>
-                  <form action={rejectProduct}>
+                  <form action={rejectProduct} style={styles.rejectForm}>
                     <input type="hidden" name="id" value={product.id} />
-                    <button type="submit" style={styles.secondaryButton}>
+                    <input
+                      type="text"
+                      name="review_note"
+                      placeholder="驳回原因（可选）"
+                      style={styles.rejectNoteInput}
+                      maxLength={500}
+                    />
+                    <button type="submit" style={styles.dangerButton}>
                       驳回
                     </button>
                   </form>
@@ -132,7 +140,12 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
           <ul style={styles.list}>
             {rejected.map((product) => (
               <li key={product.id} style={styles.rowMuted}>
-                <span style={styles.rowName}>{product.name}</span>
+                <div style={styles.rowMain}>
+                  <span style={styles.rowName}>{product.name}</span>
+                  {product.review_note ? (
+                    <span style={styles.submitter}>原因：{product.review_note}</span>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   style={styles.secondaryButton}
@@ -332,6 +345,22 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: "wrap",
     gap: 8,
     justifyContent: "flex-end",
+    alignItems: "center",
+  },
+  rejectForm: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    alignItems: "center",
+    maxWidth: 320,
+  },
+  rejectNoteInput: {
+    flex: "1 1 180px",
+    minWidth: 140,
+    padding: "8px 10px",
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    fontSize: 13,
   },
   submitter: {
     width: "100%",

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const { data, error } = await admin
       .from("products")
       .select(
-        "id, name, price, category, review_status, created_at, image_url"
+        "id, name, price, category, unit, description, review_status, review_note, created_at, image_url"
       )
       .eq("created_by", user.id)
       .neq("review_status", "approved")
