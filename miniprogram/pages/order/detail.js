@@ -126,6 +126,10 @@ Page({
     wxacodeVisible: false,
     wxacodeSrc: "",
     wxacodeLoading: false,
+    canManageSkus: false,
+    addPickerVisible: false,
+    addCatalog: [],
+    addCatalogLoading: false,
   },
 
   onLoad(options) {
@@ -171,6 +175,7 @@ Page({
       const canMinus = canAdd;
       const canClose = canAdd && (isCreator || this._isLeader);
       const canEditPrice = canAdd && isCreator;
+      const canManageSkus = canAdd && isCreator;
 
       let products = [];
       const links = await rest(
@@ -198,7 +203,6 @@ Page({
           )
         : [];
       const myItems = myItemsRaw || [];
-      products = mergeProductsWithMyItems(products, myItems);
 
       const teamRows = await rest(
         `order_items?group_order_id=eq.${orderId}&select=id,user_id,product_name,product_price,quantity,profiles(nickname)&order=created_at.asc`,
@@ -206,6 +210,15 @@ Page({
 
       order.deadlineShort = formatDeadlineShort(order.deadline);
       const totals = buildProductTotals(teamRows);
+      const qtyByName = new Map();
+      for (const row of teamRows || []) {
+        const name = row.product_name;
+        qtyByName.set(name, (qtyByName.get(name) || 0) + (row.quantity || 0));
+      }
+      products = mergeProductsWithMyItems(products, myItems).map((p) => ({
+        ...p,
+        canRemoveSku: canManageSkus && !(qtyByName.get(p.name) || 0),
+      }));
 
       this.setData({
         order,
@@ -220,6 +233,7 @@ Page({
         canMinus,
         canClose,
         canEditPrice,
+        canManageSkus,
         loading: false,
       });
     } catch (err) {
@@ -262,6 +276,77 @@ Page({
     } finally {
       this._qtyBusy = false;
     }
+  },
+
+  async onShowAddPicker() {
+    if (!this.data.canManageSkus) return;
+    this.setData({
+      addPickerVisible: true,
+      addCatalogLoading: true,
+      addCatalog: [],
+    });
+    try {
+      const rows = await rest(
+        "products?select=id,name,price,image_url&order=name.asc",
+      );
+      const inOrder = new Set((this.data.products || []).map((p) => p.id));
+      const addCatalog = (rows || []).filter((p) => !inOrder.has(p.id));
+      this.setData({ addCatalog, addCatalogLoading: false });
+    } catch (err) {
+      this.setData({ addPickerVisible: false, addCatalogLoading: false });
+      wx.showToast({ title: err.message || "\u52a0\u8f7d\u5931\u8d25", icon: "none" });
+    }
+  },
+
+  onCloseAddPicker() {
+    this.setData({ addPickerVisible: false });
+  },
+
+  async onPickAddProduct(e) {
+    const productId = e.currentTarget.dataset.id;
+    if (!productId || this._skuBusy) return;
+    this._skuBusy = true;
+    try {
+      await requestWithAuth(
+        `/api/group-orders/${this.data.orderId}/products`,
+        "POST",
+        { product_id: productId },
+      );
+      this.setData({ addPickerVisible: false });
+      wx.showToast({ title: "\u5df2\u6dfb\u52a0", icon: "success" });
+      await this.loadAll({ silent: true });
+    } catch (err) {
+      wx.showToast({ title: err.message || "\u5931\u8d25", icon: "none" });
+    } finally {
+      this._skuBusy = false;
+    }
+  },
+
+  onRemoveSku(e) {
+    if (!this.data.canManageSkus) return;
+    const productId = e.currentTarget.dataset.productId;
+    const name = e.currentTarget.dataset.name || "\u8be5\u5546\u54c1";
+    if (!productId) return;
+    wx.showModal({
+      title: "\u79fb\u9664\u5546\u54c1\uff1f",
+      content: `\u4ece\u672c\u5355\u79fb\u9664\u300c${name}\u300d\uff08\u5168\u56e2\u65e0\u52a0\u8d2d\u65f6\u624d\u53ef\u79fb\u9664\uff09`,
+      success: async (res) => {
+        if (!res.confirm || this._skuBusy) return;
+        this._skuBusy = true;
+        try {
+          await requestWithAuth(
+            `/api/group-orders/${this.data.orderId}/products/${productId}`,
+            "DELETE",
+          );
+          wx.showToast({ title: "\u5df2\u79fb\u9664", icon: "success" });
+          await this.loadAll({ silent: true });
+        } catch (err) {
+          wx.showToast({ title: err.message || "\u5931\u8d25", icon: "none" });
+        } finally {
+          this._skuBusy = false;
+        }
+      },
+    });
   },
 
   onEditPrice(e) {

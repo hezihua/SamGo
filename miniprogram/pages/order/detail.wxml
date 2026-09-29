@@ -39,9 +39,12 @@
       </view>
     </view>
 
-    <view class="section-head px section-first">
-      <view class="section-head-bar"></view>
-      <text class="section-head-title">选购商品</text>
+    <view class="section-head px section-first section-head-row">
+      <view class="section-head-left">
+        <view class="section-head-bar"></view>
+        <text class="section-head-title">选购商品</text>
+      </view>
+      <text wx:if="{{canManageSkus}}" class="section-head-action" bindtap="onShowAddPicker">添加商品</text>
     </view>
     <view class="product-list px">
       <view class="sku-card" wx:for="{{products}}" wx:key="id">
@@ -64,6 +67,13 @@
               data-price="{{item.price}}"
               bindtap="onEditPrice"
             >改价</text>
+            <text
+              wx:if="{{item.canRemoveSku}}"
+              class="sku-remove"
+              data-product-id="{{item.id}}"
+              data-name="{{item.name}}"
+              bindtap="onRemoveSku"
+            >移除</text>
           </view>
         </view>
         <view wx:if="{{canAdd}}" class="qty-stepper {{canMinus ? '' : 'qty-stepper-add-only'}}">
@@ -167,6 +177,33 @@
       </view>
     </view>
   </block>
+
+  <view wx:if="{{addPickerVisible}}" class="wxacode-mask" bindtap="onCloseAddPicker">
+    <view class="add-picker-panel" catchtap="">
+      <text class="wxacode-title">添加本单商品</text>
+      <text class="add-picker-hint muted">从已上架商品中选择</text>
+      <view wx:if="{{addCatalogLoading}}" class="wxacode-loading muted">加载中…</view>
+      <scroll-view wx:else scroll-y class="add-picker-scroll">
+        <view wx:if="{{addCatalog.length === 0}}" class="empty-inline">没有可添加的商品</view>
+        <view
+          class="add-picker-row"
+          wx:for="{{addCatalog}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onPickAddProduct"
+        >
+          <image wx:if="{{item.image_url}}" class="add-picker-img" src="{{item.image_url}}" mode="aspectFill" />
+          <view wx:else class="add-picker-img add-picker-ph">Sam</view>
+          <view class="add-picker-info">
+            <text class="add-picker-name">{{item.name}}</text>
+            <text class="add-picker-price">参考 ¥{{item.price}}</text>
+          </view>
+          <text class="add-picker-add">添加</text>
+        </view>
+      </scroll-view>
+      <text class="wxacode-close" bindtap="onCloseAddPicker">关闭</text>
+    </view>
+  </view>
 
   <view wx:if="{{wxacodeVisible}}" class="wxacode-mask" bindtap="onCloseWxacode">
     <view class="wxacode-panel" catchtap="">

@@ -16,6 +16,7 @@
 - 拼单管理 **进行中 / 历史**：**我发起的**，或 **加购过的**；仅点开分享不算参与。他人通过 **群分享卡片 / 小程序码** 进入详情
 - 拼单状态仅 **进行中（open）** / **已截止（closed）**；无最少成团人数
 - **截止拼单**：到 `deadline` 自动改为 `closed`（每日 Cron + 打开列表/详情时同步）；发起人或团长仍可手动 `POST /api/group-orders/:id/close`
+- **本单增删商品**（仅发起人、进行中）：`POST/DELETE /api/group-orders/:id/products`；删除要求全团该 SKU 零加购
 - **复制汇总发群**：`GET /api/group-orders/:id/summary` → 剪贴板
 
 ### Web 管理
