@@ -120,13 +120,17 @@ Page({
       product_ids,
     })
       .then((result) => {
-        if (!result?.order?.id) {
+        const orderId = result?.order?.id;
+        if (!orderId) {
           throw new Error("\u521b\u5efa\u5931\u8d25");
         }
+        return orderId;
       })
-      .then(() => {
+      .then((orderId) => {
         wx.showToast({ title: "\u53d1\u5e03\u6210\u529f", icon: "success" });
-        setTimeout(() => wx.navigateBack(), 1500);
+        setTimeout(() => {
+          wx.redirectTo({ url: `/pages/order/detail?id=${orderId}` });
+        }, 600);
       })
       .catch((err) => {
         this.setData({
