@@ -25,6 +25,7 @@ export type ProductRow = {
 };
 
 type ModalState = { mode: "add" } | { mode: "edit"; product: ProductRow } | null;
+type AdminTab = "pending" | "approved";
 
 type ProductsAdminProps = {
   products: ProductRow[];
@@ -35,6 +36,7 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
   const pending = products.filter((p) => p.review_status === "pending");
   const approved = products.filter((p) => p.review_status === "approved");
   const rejected = products.filter((p) => p.review_status === "rejected");
+  const [tab, setTab] = useState<AdminTab>("approved");
 
   const closeModal = useCallback(() => setModal(null), []);
 
@@ -47,13 +49,43 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [modal, closeModal]);
 
+  const pendingTabCount = pending.length + rejected.length;
+
   return (
     <section style={styles.section}>
       <div style={styles.toolbar}>
-        <span style={styles.count}>
-          已上架 {approved.length} 件
-          {pending.length > 0 ? ` · 待审核 ${pending.length}` : ""}
-        </span>
+        <div style={styles.tabBar} role="tablist" aria-label="商品分类">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "pending"}
+            style={{
+              ...styles.tab,
+              ...(tab === "pending" ? styles.tabActive : null),
+            }}
+            onClick={() => setTab("pending")}
+          >
+            待审核
+            {pendingTabCount > 0 ? (
+              <span style={styles.tabBadge}>{pendingTabCount}</span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "approved"}
+            style={{
+              ...styles.tab,
+              ...(tab === "approved" ? styles.tabActive : null),
+            }}
+            onClick={() => setTab("approved")}
+          >
+            已上架
+            {approved.length > 0 ? (
+              <span style={styles.tabCount}>{approved.length}</span>
+            ) : null}
+          </button>
+        </div>
         <button
           type="button"
           style={styles.primaryButton}
@@ -62,40 +94,98 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
           新增商品
         </button>
       </div>
-      {pending.length > 0 ? (
+
+      {tab === "pending" ? (
         <>
-          <h3 style={styles.sectionTitle}>待审核（小程序提交）</h3>
-          <ul style={styles.list}>
-            {pending.map((product) => (
-              <li key={product.id} style={styles.rowPending}>
-                <div style={styles.rowMain}>
-                  <span style={styles.rowName}>{product.name}</span>
-                  <span style={styles.rowPrice}>¥{product.price}</span>
-                  <span style={styles.tag}>{product.category}</span>
-                  <span style={styles.submitter}>
-                    提交人：{product.profiles?.nickname?.trim() || "微信用户"}
-                  </span>
-                </div>
-                <div style={styles.reviewActions}>
-                  <form action={approveProduct}>
-                    <input type="hidden" name="id" value={product.id} />
-                    <button type="submit" style={styles.primaryButton}>
-                      通过
+          <p style={styles.tabHint}>小程序用户提交的商品在此审核；通过后进入「已上架」。</p>
+          {pending.length === 0 && rejected.length === 0 ? (
+            <p style={styles.empty}>暂无待审核商品</p>
+          ) : null}
+          {pending.length > 0 ? (
+            <>
+              <h3 style={styles.sectionTitle}>待审核（{pending.length}）</h3>
+              <ul style={styles.list}>
+                {pending.map((product) => (
+                  <li key={product.id} style={styles.rowPending}>
+                    <div style={styles.rowMain}>
+                      <span style={styles.rowName}>{product.name}</span>
+                      <span style={styles.rowPrice}>¥{product.price}</span>
+                      <span style={styles.tag}>{product.category}</span>
+                      <span style={styles.submitter}>
+                        提交人：{product.profiles?.nickname?.trim() || "微信用户"}
+                      </span>
+                    </div>
+                    <div style={styles.reviewActions}>
+                      <form action={approveProduct}>
+                        <input type="hidden" name="id" value={product.id} />
+                        <button type="submit" style={styles.primaryButton}>
+                          通过
+                        </button>
+                      </form>
+                      <form action={rejectProduct} style={styles.rejectForm}>
+                        <input type="hidden" name="id" value={product.id} />
+                        <input
+                          type="text"
+                          name="review_note"
+                          placeholder="驳回原因（可选）"
+                          style={styles.rejectNoteInput}
+                          maxLength={500}
+                        />
+                        <button type="submit" style={styles.dangerButton}>
+                          驳回
+                        </button>
+                      </form>
+                      <button
+                        type="button"
+                        style={styles.secondaryButton}
+                        onClick={() => setModal({ mode: "edit", product })}
+                      >
+                        编辑
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {rejected.length > 0 ? (
+            <>
+              <h3 style={styles.sectionTitleMuted}>已驳回（{rejected.length}）</h3>
+              <ul style={styles.list}>
+                {rejected.map((product) => (
+                  <li key={product.id} style={styles.rowMuted}>
+                    <div style={styles.rowMain}>
+                      <span style={styles.rowName}>{product.name}</span>
+                      {product.review_note ? (
+                        <span style={styles.submitter}>原因：{product.review_note}</span>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      style={styles.secondaryButton}
+                      onClick={() => setModal({ mode: "edit", product })}
+                    >
+                      编辑
                     </button>
-                  </form>
-                  <form action={rejectProduct} style={styles.rejectForm}>
-                    <input type="hidden" name="id" value={product.id} />
-                    <input
-                      type="text"
-                      name="review_note"
-                      placeholder="驳回原因（可选）"
-                      style={styles.rejectNoteInput}
-                      maxLength={500}
-                    />
-                    <button type="submit" style={styles.dangerButton}>
-                      驳回
-                    </button>
-                  </form>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </>
+      ) : (
+        <>
+          {approved.length === 0 ? (
+            <p style={styles.empty}>暂无已上架商品，点击「新增商品」添加</p>
+          ) : (
+            <ul style={styles.list}>
+              {approved.map((product) => (
+                <li key={product.id} style={styles.row}>
+                  <div style={styles.rowMain}>
+                    <span style={styles.rowName}>{product.name}</span>
+                    <span style={styles.rowPrice}>¥{product.price}</span>
+                    <span style={styles.tag}>{product.category}</span>
+                  </div>
                   <button
                     type="button"
                     style={styles.secondaryButton}
@@ -103,61 +193,12 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
                   >
                     编辑
                   </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
-      ) : null}
-
-      <h3 style={styles.sectionTitle}>已上架</h3>
-      <ul style={styles.list}>
-        {approved.map((product) => (
-          <li key={product.id} style={styles.row}>
-            <div style={styles.rowMain}>
-              <span style={styles.rowName}>{product.name}</span>
-              <span style={styles.rowPrice}>¥{product.price}</span>
-              <span style={styles.tag}>{product.category}</span>
-            </div>
-            <button
-              type="button"
-              style={styles.secondaryButton}
-              onClick={() => setModal({ mode: "edit", product })}
-            >
-              编辑
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {approved.length === 0 && pending.length === 0 ? (
-        <p style={styles.empty}>暂无商品，点击「新增商品」添加</p>
-      ) : null}
-
-      {rejected.length > 0 ? (
-        <>
-          <h3 style={styles.sectionTitleMuted}>已驳回（{rejected.length}）</h3>
-          <ul style={styles.list}>
-            {rejected.map((product) => (
-              <li key={product.id} style={styles.rowMuted}>
-                <div style={styles.rowMain}>
-                  <span style={styles.rowName}>{product.name}</span>
-                  {product.review_note ? (
-                    <span style={styles.submitter}>原因：{product.review_note}</span>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  onClick={() => setModal({ mode: "edit", product })}
-                >
-                  编辑
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
+      )}
 
       {modal ? (
         <div
@@ -286,10 +327,57 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     gap: 12,
+    flexWrap: "wrap",
   },
-  count: { fontSize: 14, color: "#64748b" },
+  tabBar: {
+    display: "flex",
+    gap: 4,
+    padding: 4,
+    background: "#f1f5f9",
+    borderRadius: 10,
+  },
+  tab: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 16px",
+    borderRadius: 8,
+    border: "none",
+    background: "transparent",
+    color: "#64748b",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  tabActive: {
+    background: "#fff",
+    color: "#0060a9",
+    boxShadow: "0 1px 3px rgba(15, 23, 42, 0.08)",
+  },
+  tabBadge: {
+    minWidth: 20,
+    padding: "2px 7px",
+    borderRadius: 999,
+    background: "#f59e0b",
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: 700,
+    lineHeight: 1.3,
+    textAlign: "center",
+  },
+  tabCount: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#94a3b8",
+  },
+  tabHint: {
+    margin: "0 0 12px",
+    fontSize: 13,
+    color: "#64748b",
+    lineHeight: 1.5,
+  },
   list: {
     listStyle: "none",
     margin: 0,
