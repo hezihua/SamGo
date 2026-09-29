@@ -22,7 +22,8 @@
   </view>
   <view wx:elif="{{orders.length === 0}}" class="empty-box">
     <view class="empty-icon"></view>
-    <text class="empty-title">{{listTab === 'history' ? '暂无历史' : '暂无进行中拼单'}}</text>
+    <text class="empty-title">{{listTab === 'history' ? '暂无历史拼单' : '暂无进行中的拼单'}}</text>
+    <text wx:if="{{listTab === 'active'}}" class="empty-hint muted">我发起或参与过的会出现在这里；从群聊分享卡片进入即可加购</text>
   </view>
   <view wx:else class="order-list px">
     <view

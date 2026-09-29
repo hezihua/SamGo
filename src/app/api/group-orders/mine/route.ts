@@ -1,6 +1,58 @@
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { userFromBearer } from "@/lib/request-user";
+
+const ORDER_SELECT =
+  "id,title,status,deadline,delivery_address,created_at,creator_id";
+
+async function gatherMyOrderIds(
+  admin: SupabaseClient,
+  userId: string
+): Promise<string[]> {
+  const idSet = new Set<string>();
+
+  const { data: participantRows, error: partError } = await admin
+    .from("participants")
+    .select("group_order_id")
+    .eq("user_id", userId);
+
+  if (partError) {
+    throw partError;
+  }
+
+  for (const row of participantRows ?? []) {
+    idSet.add(row.group_order_id);
+  }
+
+  const { data: createdRows, error: createdError } = await admin
+    .from("group_orders")
+    .select("id")
+    .eq("creator_id", userId);
+
+  if (createdError) {
+    throw createdError;
+  }
+
+  for (const row of createdRows ?? []) {
+    idSet.add(row.id);
+  }
+
+  const { data: itemRows, error: itemError } = await admin
+    .from("order_items")
+    .select("group_order_id")
+    .eq("user_id", userId);
+
+  if (itemError) {
+    throw itemError;
+  }
+
+  for (const row of itemRows ?? []) {
+    idSet.add(row.group_order_id);
+  }
+
+  return Array.from(idSet);
+}
 
 export async function GET(request: Request) {
   try {
@@ -13,80 +65,28 @@ export async function GET(request: Request) {
     const scope = url.searchParams.get("scope") === "history" ? "history" : "active";
 
     const admin = createAdminClient();
+    const ids = await gatherMyOrderIds(admin, user.id);
 
-    if (scope === "active") {
-      const { data, error } = await admin
-        .from("group_orders")
-        .select("id,title,status,deadline,delivery_address,created_at,creator_id")
-        .in("status", ["open", "closing"])
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("[group-orders mine active]", error);
-        return NextResponse.json({ error: "\u52a0\u8f7d\u5931\u8d25" }, { status: 500 });
-      }
-
-      return NextResponse.json({ orders: data ?? [] });
-    }
-
-    const { data: participantRows, error: partError } = await admin
-      .from("participants")
-      .select("group_order_id")
-      .eq("user_id", user.id);
-
-    if (partError) {
-      console.error("[group-orders mine participants]", partError);
-      return NextResponse.json({ error: "\u52a0\u8f7d\u5931\u8d25" }, { status: 500 });
-    }
-
-    const idSet = new Set<string>();
-    for (const row of participantRows ?? []) {
-      idSet.add(row.group_order_id);
-    }
-
-    const { data: createdRows, error: createdError } = await admin
-      .from("group_orders")
-      .select("id")
-      .eq("creator_id", user.id)
-      .in("status", ["closed", "completed"]);
-
-    if (createdError) {
-      console.error("[group-orders mine created]", createdError);
-      return NextResponse.json({ error: "\u52a0\u8f7d\u5931\u8d25" }, { status: 500 });
-    }
-
-    for (const row of createdRows ?? []) {
-      idSet.add(row.id);
-    }
-
-    const { data: itemRows, error: itemError } = await admin
-      .from("order_items")
-      .select("group_order_id")
-      .eq("user_id", user.id);
-
-    if (itemError) {
-      console.error("[group-orders mine items]", itemError);
-      return NextResponse.json({ error: "\u52a0\u8f7d\u5931\u8d25" }, { status: 500 });
-    }
-
-    for (const row of itemRows ?? []) {
-      idSet.add(row.group_order_id);
-    }
-
-    const ids = Array.from(idSet);
     if (ids.length === 0) {
       return NextResponse.json({ orders: [] });
     }
 
+    const statuses =
+      scope === "history"
+        ? (["closed", "completed"] as const)
+        : (["open", "closing"] as const);
+
     const { data: orders, error: ordersError } = await admin
       .from("group_orders")
-      .select("id,title,status,deadline,delivery_address,created_at,creator_id")
+      .select(ORDER_SELECT)
       .in("id", ids)
-      .in("status", ["closed", "completed"])
-      .order("deadline", { ascending: false });
+      .in("status", [...statuses])
+      .order(scope === "history" ? "deadline" : "created_at", {
+        ascending: false,
+      });
 
     if (ordersError) {
-      console.error("[group-orders mine history]", ordersError);
+      console.error(`[group-orders mine ${scope}]`, ordersError);
       return NextResponse.json({ error: "\u52a0\u8f7d\u5931\u8d25" }, { status: 500 });
     }
 

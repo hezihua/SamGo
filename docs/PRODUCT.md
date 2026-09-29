@@ -13,7 +13,7 @@
 - 登录与会话（含可选 `is_leader`）
 - 首页进行中拼单、发起拼单（信息 + 勾选商品）
 - 拼单详情：商品图、加减加购、我的选购、**全团按商品汇总**、全团选购（按人）、分享、**拼单小程序码**
-- 首页 **进行中 / 历史拼单**（我发起或参与且已截止）
+- 拼单管理 **进行中 / 历史**：仅 **我发起、或参与过**（含加购）的拼单；他人拼单通过 **群分享卡片 / 小程序码** 进入，不会出现在全站列表
 - **截止拼单**：到 `deadline` 自动改为 `closed`（每日 Cron + 打开列表/详情时同步）；发起人或团长仍可手动 `POST /api/group-orders/:id/close`
 - **复制汇总发群**：`GET /api/group-orders/:id/summary` → 剪贴板
 
@@ -32,7 +32,7 @@
 | POST | `/api/group-orders/:id/close` | 截止拼单 |
 | GET | `/api/group-orders/:id/summary` | 汇总文案（含 `products` 按商品聚合） |
 | GET | `/api/group-orders/:id/wxacode` | 拼单小程序码（Base64 PNG，`scene`=去横杠 UUID） |
-| GET | `/api/group-orders/mine?scope=active\|history` | 进行中 / 历史拼单列表 |
+| GET | `/api/group-orders/mine?scope=active\|history` | 我的进行中 / 历史拼单（非全站） |
 | POST | `/api/order-items` | 加购 |
 | PATCH/DELETE | `/api/order-items/:id` | 改数量 / 删除（仅本人，拼单未截止） |
 

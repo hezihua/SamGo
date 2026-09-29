@@ -104,6 +104,14 @@
   color: var(--color-text);
 }
 
+.empty-hint {
+  display: block;
+  margin-top: 16rpx;
+  padding: 0 24rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
 .empty-desc {
   display: block;
   margin-top: 12rpx;
