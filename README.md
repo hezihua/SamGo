@@ -6,13 +6,11 @@ Next.js 提供微信登录等 API，拼单数据在 Supabase；客户端为 `min
 
 ### 1. Supabase
 
-在 SQL Editor 按顺序执行（若尚未初始化）：
+在 SQL Editor 按顺序执行（若尚未初始化），或使用 `pnpm db:apply:00x`（见 `package.json`）：
 
-- `supabase/migrations/001_initial_schema.sql`
-- `supabase/migrations/002_wechat_openid.sql`
-- `supabase/migrations/004_drop_profile_trigger.sql`（若 Auth 建用户报 Database error）
-- `supabase/migrations/005_leader_only_group_orders.sql`
-- `supabase/migrations/006_group_order_products.sql`
+- `001` → `002` → `004`（或 `003`）→ `005` → `006` → **`007` 商品审核** → **`008` 本单价** → **`009` 驳回原因** → **`010` 双状态**
+
+明细与产品概念见 [docs/PRODUCT.md](./docs/PRODUCT.md)；小程序侧步骤见 [miniprogram/README.md](./miniprogram/README.md)。
 
 ### 2. 环境变量
 
