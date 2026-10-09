@@ -24,7 +24,12 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const contentType = file.type || "application/octet-stream";
-    const url = await uploadProductImage(buffer, contentType, file.name);
+    const hint = formData.get("filename");
+    const originalName =
+      (file.name && file.name.trim()) ||
+      (typeof hint === "string" && hint.trim()) ||
+      "upload.jpg";
+    const url = await uploadProductImage(buffer, contentType, originalName);
 
     return NextResponse.json({ url });
   } catch (err) {

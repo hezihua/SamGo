@@ -63,9 +63,13 @@ Page({
         if (!file || !file.tempFilePath) return;
         wx.showLoading({ title: "\u4e0a\u4f20\u4e2d" });
         try {
+          const temp = file.tempFilePath || "";
+          const extMatch = /\.(\w+)(?:\?|$)/i.exec(temp);
+          const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
           const data = await uploadWithAuth(
             "/api/products/upload-image",
-            file.tempFilePath,
+            temp,
+            { filename: `photo.${ext}` },
           );
           this.setData({ imageUrl: data.url || "" });
         } catch (err) {

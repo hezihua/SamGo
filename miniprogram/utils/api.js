@@ -58,7 +58,7 @@ async function requestWithAuth(path, method, body) {
   }
 }
 
-function uploadWithAuth(path, filePath) {
+function uploadWithAuth(path, filePath, formData) {
   return ensureValidSession().then((session) => {
     const url = `${getApiBase()}${path}`;
     return new Promise((resolve, reject) => {
@@ -66,6 +66,7 @@ function uploadWithAuth(path, filePath) {
         url,
         filePath,
         name: "file",
+        formData: formData || {},
         header: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -83,7 +84,13 @@ function uploadWithAuth(path, filePath) {
           }
           reject(new Error((data && data.error) || "上传失败"));
         },
-        fail: (err) => reject(err),
+        fail: (err) => {
+          reject(
+            new Error(
+              (err && err.errMsg) || "上传失败，请检查网络与 request 合法域名",
+            ),
+          );
+        },
       });
     });
   });
