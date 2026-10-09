@@ -53,14 +53,70 @@ Page({
     this.setData({ description: e.detail.value });
   },
 
+  uploadTempImage(temp) {
+    this.setData({ imageUrl: temp });
+    wx.showLoading({ title: "\u4e0a\u4f20\u4e2d", mask: true });
+    const extMatch = /\.(\w+)(?:\?|$)/i.exec(temp);
+    const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
+    return uploadWithAuth("/api/products/upload-image", temp, {
+      filename: `photo.${ext}`,
+    })
+      .then((data) => {
+        const url = data && data.url ? String(data.url).trim() : "";
+        if (!url) {
+          throw new Error("\u670d\u52a1\u672a\u8fd4\u56de\u56fe\u7247\u5730\u5740");
+        }
+        this.setData({ imageUrl: url });
+        wx.showToast({ title: "\u56fe\u7247\u5df2\u4e0a\u4f20", icon: "success" });
+      })
+      .catch((err) => {
+        this.setData({ imageUrl: "" });
+        wx.showToast({
+          title: (err && err.message) || "\u4e0a\u4f20\u5931\u8d25",
+          icon: "none",
+          duration: 3000,
+        });
+      })
+      .finally(() => {
+        wx.hideLoading();
+      });
+  },
+
   openChooseMedia() {
+    wx.hideLoading();
     wx.chooseMedia({
       count: 1,
       mediaType: ["image"],
       sizeType: ["compressed"],
       fail: (err) => {
+        const msg = (err && err.errMsg) || "";
+        if (/cancel/i.test(msg)) {
+          return;
+        }
+        if (typeof wx.chooseImage === "function") {
+          wx.chooseImage({
+            count: 1,
+            sizeType: ["compressed"],
+            success: (res) => {
+              const temp = res.tempFilePaths && res.tempFilePaths[0];
+              if (temp) {
+                this.uploadTempImage(temp);
+              } else {
+                wx.showToast({ title: "未选到图片", icon: "none" });
+              }
+            },
+            fail: (e2) => {
+              wx.showToast({
+                title: (e2 && e2.errMsg) || msg || "无法打开相册",
+                icon: "none",
+                duration: 3000,
+              });
+            },
+          });
+          return;
+        }
         wx.showToast({
-          title: (err && err.errMsg) || "无法打开相册",
+          title: msg || "无法打开相册",
           icon: "none",
           duration: 3000,
         });
@@ -71,43 +127,19 @@ Page({
           wx.showToast({ title: "未选到图片", icon: "none" });
           return;
         }
-        const temp = file.tempFilePath;
-        this.setData({ imageUrl: temp });
-        wx.showLoading({ title: "\u4e0a\u4f20\u4e2d", mask: true });
-        const extMatch = /\.(\w+)(?:\?|$)/i.exec(temp);
-        const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
-        uploadWithAuth("/api/products/upload-image", temp, {
-          filename: `photo.${ext}`,
-        })
-          .then((data) => {
-            const url = data && data.url ? String(data.url).trim() : "";
-            if (!url) {
-              throw new Error("\u670d\u52a1\u672a\u8fd4\u56de\u56fe\u7247\u5730\u5740");
-            }
-            this.setData({ imageUrl: url });
-            wx.showToast({ title: "\u56fe\u7247\u5df2\u4e0a\u4f20", icon: "success" });
-          })
-          .catch((err) => {
-            this.setData({ imageUrl: "" });
-            wx.showToast({
-              title: (err && err.message) || "\u4e0a\u4f20\u5931\u8d25",
-              icon: "none",
-              duration: 3000,
-            });
-          })
-          .finally(() => {
-            wx.hideLoading();
-          });
+        this.uploadTempImage(file.tempFilePath);
       },
     });
   },
 
   onChooseImage() {
+    wx.showLoading({ title: "\u8bf7\u7a0d\u5019", mask: true });
     const run = () => this.openChooseMedia();
     if (typeof wx.requirePrivacyAuthorize === "function") {
       wx.requirePrivacyAuthorize({
         success: run,
         fail: () => {
+          wx.hideLoading();
           wx.showToast({
             title: "\u9700\u540c\u610f\u9690\u79c1\u534f\u8bae\u624d\u53ef\u9009\u56fe",
             icon: "none",
