@@ -29,8 +29,8 @@
     </view>
     <view class="form-item form-item-last">
       <text class="form-label">图片<text class="req">*</text></text>
-      <button class="image-upload-btn" plain hover-class="image-upload-hover" bindtap="onChooseImage">
-        <view class="image-upload {{imageUrl ? 'image-upload-has' : ''}}">
+      <view class="image-upload-wrap">
+        <view class="image-upload {{imageUrl ? 'image-upload-has' : ''}}" bindtap="onChooseImage">
           <image wx:if="{{imageUrl}}" class="thumb" src="{{imageUrl}}" mode="aspectFill" />
           <view wx:else class="image-placeholder">
             <text class="image-plus">+</text>
@@ -38,7 +38,7 @@
           </view>
           <text wx:if="{{imageUrl}}" class="image-change">更换</text>
         </view>
-      </button>
+      </view>
       <text wx:if="{{pickStatus}}" class="pick-status">{{pickStatus}}</text>
     </view>
   </view>
