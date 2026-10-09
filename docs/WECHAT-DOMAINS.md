@@ -9,6 +9,14 @@ samgo.haylee.site
 ciltmxjnydsqgcpvwwie.supabase.co
 ```
 
+## uploadFile 合法域名（商品提报上传图，必配）
+
+与 request 相同，须包含 Next API 根域名（真机 `wx.uploadFile` 单独校验，仅配 request 仍会报 `url not in domain list`）：
+
+```
+samgo.haylee.site
+```
+
 ## downloadFile 合法域名（商品图 OSS）
 
 ```

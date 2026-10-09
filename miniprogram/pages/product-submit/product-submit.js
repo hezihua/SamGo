@@ -75,7 +75,7 @@ Page({
           throw new Error("\u670d\u52a1\u672a\u8fd4\u56de\u56fe\u7247\u5730\u5740");
         }
         this.setData({ imageUrl: url });
-        this.setPickStatus("上传成功");
+        this.setPickStatus("");
         wx.showToast({ title: "\u56fe\u7247\u5df2\u4e0a\u4f20", icon: "success" });
       })
       .catch((err) => {
