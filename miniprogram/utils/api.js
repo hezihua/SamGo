@@ -58,42 +58,69 @@ async function requestWithAuth(path, method, body) {
   }
 }
 
-function uploadWithAuth(path, filePath, formData) {
-  return ensureValidSession().then((session) => {
-    const url = `${getApiBase()}${path}`;
-    return new Promise((resolve, reject) => {
-      wx.uploadFile({
-        url,
-        filePath,
-        name: "file",
-        formData: formData || {},
-        header: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        success: (res) => {
-          let data = {};
-          try {
-            data = JSON.parse(res.data || "{}");
-          } catch (_e) {
-            reject(new Error("上传失败"));
-            return;
-          }
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(data);
-            return;
-          }
-          reject(new Error((data && data.error) || "上传失败"));
-        },
-        fail: (err) => {
-          reject(
-            new Error(
-              (err && err.errMsg) || "上传失败，请检查网络与 request 合法域名",
-            ),
+function uploadOnce(path, filePath, formData, accessToken) {
+  const url = `${getApiBase()}${path}`;
+  return new Promise((resolve, reject) => {
+    wx.uploadFile({
+      url,
+      filePath,
+      name: "file",
+      formData: formData || {},
+      header: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      success: (res) => {
+        let data = {};
+        try {
+          data = JSON.parse(res.data || "{}");
+        } catch (_e) {
+          const err = new Error(
+            res.statusCode === 401 ? "请先登录" : "上传失败（服务返回异常）",
           );
-        },
-      });
+          err.statusCode = res.statusCode;
+          reject(err);
+          return;
+        }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data);
+          return;
+        }
+        const err = new Error((data && data.error) || "上传失败");
+        err.statusCode = res.statusCode;
+        reject(err);
+      },
+      fail: (err) => {
+        reject(
+          new Error(
+            (err && err.errMsg) || "上传失败，请检查网络与 request 合法域名",
+          ),
+        );
+      },
     });
   });
+}
+
+async function uploadWithAuth(path, filePath, formData) {
+  let session = await ensureValidSession();
+  try {
+    return await uploadOnce(path, filePath, formData, session.access_token);
+  } catch (err) {
+    if (err.statusCode !== 401 || !session.refresh_token) {
+      if (isAuthErrorMessage(err.message)) {
+        clearSession();
+      }
+      throw err;
+    }
+    session = await refreshSessionWithToken(session.refresh_token);
+    try {
+      return await uploadOnce(path, filePath, formData, session.access_token);
+    } catch (retryErr) {
+      if (isAuthErrorMessage(retryErr.message)) {
+        clearSession();
+      }
+      throw retryErr;
+    }
+  }
 }
 
 module.exports = {
