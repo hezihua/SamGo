@@ -1,5 +1,8 @@
 const { ensureValidSession, clearSession } = require("../../utils/auth");
 const { requestWithAuth, uploadWithAuth } = require("../../utils/api");
+const { getApiBase } = require("../../utils/get-api-base");
+
+const CLIENT_BUILD = "1.0.6-pick";
 
 Page({
   data: {
@@ -13,6 +16,11 @@ Page({
     rejectedList: [],
     resubmitId: "",
     submitting: false,
+    pickStatus: "",
+  },
+
+  setPickStatus(msg) {
+    this.setData({ pickStatus: msg });
   },
 
   async onShow() {
@@ -67,10 +75,12 @@ Page({
           throw new Error("\u670d\u52a1\u672a\u8fd4\u56de\u56fe\u7247\u5730\u5740");
         }
         this.setData({ imageUrl: url });
+        this.setPickStatus("上传成功");
         wx.showToast({ title: "\u56fe\u7247\u5df2\u4e0a\u4f20", icon: "success" });
       })
       .catch((err) => {
         this.setData({ imageUrl: "" });
+        this.setPickStatus((err && err.message) || "上传失败");
         wx.showToast({
           title: (err && err.message) || "\u4e0a\u4f20\u5931\u8d25",
           icon: "none",
@@ -82,74 +92,101 @@ Page({
       });
   },
 
-  openChooseMedia() {
+  pickFromAlbum() {
     wx.hideLoading();
-    wx.chooseMedia({
+    this.setPickStatus(`${CLIENT_BUILD} · 打开相册…`);
+    wx.chooseImage({
       count: 1,
-      mediaType: ["image"],
       sizeType: ["compressed"],
-      fail: (err) => {
-        const msg = (err && err.errMsg) || "";
-        if (/cancel/i.test(msg)) {
-          return;
-        }
-        if (typeof wx.chooseImage === "function") {
-          wx.chooseImage({
-            count: 1,
-            sizeType: ["compressed"],
-            success: (res) => {
-              const temp = res.tempFilePaths && res.tempFilePaths[0];
-              if (temp) {
-                this.uploadTempImage(temp);
-              } else {
-                wx.showToast({ title: "未选到图片", icon: "none" });
-              }
-            },
-            fail: (e2) => {
-              wx.showToast({
-                title: (e2 && e2.errMsg) || msg || "无法打开相册",
-                icon: "none",
-                duration: 3000,
-              });
-            },
-          });
-          return;
-        }
-        wx.showToast({
-          title: msg || "无法打开相册",
-          icon: "none",
-          duration: 3000,
-        });
-      },
+      sourceType: ["album"],
       success: (res) => {
-        const file = res.tempFiles && res.tempFiles[0];
-        if (!file || !file.tempFilePath) {
+        const temp = res.tempFilePaths && res.tempFilePaths[0];
+        if (!temp) {
+          this.setPickStatus("未选到图片");
           wx.showToast({ title: "未选到图片", icon: "none" });
           return;
         }
-        this.uploadTempImage(file.tempFilePath);
+        this.setPickStatus("已选图，上传中…");
+        this.uploadTempImage(temp);
+      },
+      fail: (err) => {
+        const msg = (err && err.errMsg) || "无法打开相册";
+        if (/cancel/i.test(msg)) {
+          this.setPickStatus("");
+          return;
+        }
+        this.setPickStatus(msg);
+        wx.showToast({ title: msg, icon: "none", duration: 3000 });
       },
     });
   },
 
-  onChooseImage() {
-    wx.showLoading({ title: "\u8bf7\u7a0d\u5019", mask: true });
-    const run = () => this.openChooseMedia();
-    if (typeof wx.requirePrivacyAuthorize === "function") {
-      wx.requirePrivacyAuthorize({
-        success: run,
-        fail: () => {
-          wx.hideLoading();
+  ensurePrivacyThenPick() {
+    const run = () => this.pickFromAlbum();
+    if (typeof wx.getPrivacySetting !== "function") {
+      run();
+      return;
+    }
+    wx.getPrivacySetting({
+      success: (res) => {
+        if (!res.needAuthorization) {
+          run();
+          return;
+        }
+        if (typeof wx.requirePrivacyAuthorize !== "function") {
+          this.setPickStatus("请先同意隐私协议（设置-隐私）");
           wx.showToast({
-            title: "\u9700\u540c\u610f\u9690\u79c1\u534f\u8bae\u624d\u53ef\u9009\u56fe",
+            title: "需同意隐私协议后才可选图",
             icon: "none",
             duration: 3000,
           });
-        },
-      });
-      return;
-    }
-    run();
+          wx.hideLoading();
+          return;
+        }
+        let done = false;
+        const finish = (fn) => {
+          if (done) return;
+          done = true;
+          fn();
+        };
+        const timer = setTimeout(() => {
+          finish(() => {
+            this.setPickStatus("隐私授权超时，尝试直接选图…");
+            run();
+          });
+        }, 4000);
+        wx.requirePrivacyAuthorize({
+          success: () => {
+            clearTimeout(timer);
+            finish(run);
+          },
+          fail: () => {
+            clearTimeout(timer);
+            finish(() => {
+              wx.hideLoading();
+              this.setPickStatus("未同意隐私协议");
+              wx.showToast({
+                title: "需同意隐私协议后才可选图",
+                icon: "none",
+                duration: 3000,
+              });
+            });
+          },
+        });
+      },
+      fail: () => run(),
+    });
+  },
+
+  onChooseImage() {
+    let env = "";
+    try {
+      env = wx.getAccountInfoSync().miniProgram.envVersion || "";
+    } catch (_e) {}
+    const api = getApiBase();
+    this.setPickStatus(`${CLIENT_BUILD} · ${env || "?"} · 点击已响应`);
+    wx.showLoading({ title: "\u8bf7\u7a0d\u5019", mask: true });
+    this.ensurePrivacyThenPick();
   },
 
   onEditRejected(e) {
@@ -193,8 +230,13 @@ Page({
       wx.showToast({ title: "\u8bf7\u586b\u5199\u6709\u6548\u4ef7\u683c", icon: "none" });
       return;
     }
-    if (!(this.data.imageUrl || "").trim()) {
+    const img = (this.data.imageUrl || "").trim();
+    if (!img) {
       wx.showToast({ title: "\u8bf7\u4e0a\u4f20\u5546\u54c1\u56fe\u7247", icon: "none" });
+      return;
+    }
+    if (!/^https:\/\//i.test(img)) {
+      wx.showToast({ title: "\u56fe\u7247\u672a\u4e0a\u4f20\u5b8c\u6210\uff0c\u8bf7\u91cd\u9009", icon: "none" });
       return;
     }
 

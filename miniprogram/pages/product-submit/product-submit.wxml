@@ -29,14 +29,17 @@
     </view>
     <view class="form-item form-item-last">
       <text class="form-label">图片<text class="req">*</text></text>
-      <view class="image-upload" bindtap="onChooseImage">
-        <image wx:if="{{imageUrl}}" class="thumb" src="{{imageUrl}}" mode="aspectFill" />
-        <view wx:else class="image-placeholder">
-          <text class="image-plus">+</text>
-          <text class="image-hint">选择图片</text>
+      <button class="image-upload-btn" plain hover-class="none" bindtap="onChooseImage">
+        <view class="image-upload">
+          <image wx:if="{{imageUrl}}" class="thumb" src="{{imageUrl}}" mode="aspectFill" />
+          <view wx:else class="image-placeholder">
+            <text class="image-plus">+</text>
+            <text class="image-hint">选择图片</text>
+          </view>
+          <text wx:if="{{imageUrl}}" class="image-change">更换</text>
         </view>
-        <text wx:if="{{imageUrl}}" class="image-change">更换</text>
-      </view>
+      </button>
+      <text wx:if="{{pickStatus}}" class="pick-status">{{pickStatus}}</text>
     </view>
   </view>
 
