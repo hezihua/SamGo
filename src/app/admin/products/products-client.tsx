@@ -9,6 +9,7 @@ import {
   updateProduct,
 } from "./actions";
 import { ImageUploadField } from "./image-upload-field";
+import { PosterImportPanel } from "./poster-import-panel";
 
 export type ProductRow = {
   id: string;
@@ -24,7 +25,15 @@ export type ProductRow = {
   profiles?: { nickname: string | null } | null;
 };
 
-type ModalState = { mode: "add" } | { mode: "edit"; product: ProductRow } | null;
+export type ProductDraft = Pick<
+  ProductRow,
+  "name" | "price" | "category" | "unit" | "image_url" | "description"
+>;
+
+type ModalState =
+  | { mode: "add"; draft?: ProductDraft }
+  | { mode: "edit"; product: ProductRow }
+  | null;
 type AdminTab = "pending" | "approved";
 
 type ProductsAdminProps = {
@@ -37,6 +46,7 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
   const approved = products.filter((p) => p.review_status === "approved");
   const rejected = products.filter((p) => p.review_status === "rejected");
   const [tab, setTab] = useState<AdminTab>("approved");
+  const [savedFlash, setSavedFlash] = useState<string | null>(null);
 
   const closeModal = useCallback(() => setModal(null), []);
 
@@ -86,14 +96,28 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
             ) : null}
           </button>
         </div>
-        <button
-          type="button"
-          style={styles.primaryButton}
-          onClick={() => setModal({ mode: "add" })}
-        >
-          新增商品
-        </button>
+        <div style={styles.toolbarActions}>
+          <PosterImportPanel
+            onSaved={(name) => {
+              setSavedFlash(`已入库：${name}`);
+              setTab("approved");
+            }}
+          />
+          <button
+            type="button"
+            style={styles.primaryButton}
+            onClick={() => setModal({ mode: "add" })}
+          >
+            新增商品
+          </button>
+        </div>
       </div>
+
+      {savedFlash ? (
+        <p style={styles.savedFlash} role="status">
+          {savedFlash}
+        </p>
+      ) : null}
 
       {tab === "pending" ? (
         <>
@@ -211,7 +235,9 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
           <div style={styles.dialog} role="dialog" aria-modal="true">
             {modal.mode === "add" ? (
               <ProductForm
-                title="新增商品"
+                key={modal.draft?.name ?? "add"}
+                title={modal.draft ? "新增商品（海报识别）" : "新增商品"}
+                draft={modal.draft}
                 onCancel={closeModal}
                 action={createProduct}
               />
@@ -234,12 +260,14 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
 type ProductFormProps = {
   title: string;
   product?: ProductRow;
+  draft?: ProductDraft;
   onCancel: () => void;
   action: (formData: FormData) => Promise<void>;
   onDelete?: (formData: FormData) => Promise<void>;
 };
 function ProductForm(props: ProductFormProps) {
-  const { title, product, onCancel, action, onDelete } = props;
+  const { title, product, draft, onCancel, action, onDelete } = props;
+  const values = product ?? draft;
   const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!onDelete || !product) return;
     const msg = "\u786e\u5b9a\u5220\u9664\u300c" + product.name + "\u300d\uff1f\u6b64\u64cd\u4f5c\u4e0d\u53ef\u6062\u590d\u3002";
@@ -256,7 +284,7 @@ function ProductForm(props: ProductFormProps) {
           <input
             name="name"
             required
-            defaultValue={product?.name ?? ""}
+            defaultValue={values?.name ?? ""}
             style={styles.input}
           />
         </label>
@@ -268,7 +296,7 @@ function ProductForm(props: ProductFormProps) {
             step="0.01"
             min="0"
             required
-            defaultValue={product?.price ?? ""}
+            defaultValue={values?.price ?? ""}
             style={styles.input}
           />
         </label>
@@ -276,7 +304,7 @@ function ProductForm(props: ProductFormProps) {
           分类
           <input
             name="category"
-            defaultValue={product?.category ?? "\u5176\u4ed6"}
+            defaultValue={values?.category ?? "\u5176\u4ed6"}
             style={styles.input}
           />
         </label>
@@ -284,17 +312,17 @@ function ProductForm(props: ProductFormProps) {
           单位
           <input
             name="unit"
-            defaultValue={product?.unit ?? "\u4ef6"}
+            defaultValue={values?.unit ?? "\u4ef6"}
             style={styles.input}
           />
         </label>
-        <ImageUploadField defaultUrl={product?.image_url} />
+        <ImageUploadField defaultUrl={values?.image_url} />
         <label style={styles.label}>
           描述
           <textarea
             name="description"
             rows={3}
-            defaultValue={product?.description ?? ""}
+            defaultValue={values?.description ?? ""}
             style={styles.textarea}
           />
         </label>
@@ -330,6 +358,20 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 12,
     gap: 12,
     flexWrap: "wrap",
+  },
+  toolbarActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
+  savedFlash: {
+    margin: "0 0 12px",
+    padding: "10px 12px",
+    borderRadius: 8,
+    background: "#ecfdf5",
+    color: "#047857",
+    fontSize: 14,
   },
   tabBar: {
     display: "flex",
