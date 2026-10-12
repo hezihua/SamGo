@@ -1,5 +1,31 @@
 import sharp from "sharp";
 
+const VISION_MAX_SIDE = 1600;
+
+/** 缩小海报再送 Vision，降低 OpenRouter 上游失败/限流概率 */
+export async function preparePosterVisionImage(
+  buffer: Buffer,
+): Promise<{ buffer: Buffer; mime: string }> {
+  const img = sharp(buffer).rotate();
+  const meta = await img.metadata();
+  const w = meta.width ?? 0;
+  const h = meta.height ?? 0;
+  const maxSide = Math.max(w, h);
+
+  let pipeline = img;
+  if (maxSide > VISION_MAX_SIDE) {
+    pipeline = pipeline.resize({
+      width: w >= h ? VISION_MAX_SIDE : undefined,
+      height: h > w ? VISION_MAX_SIDE : undefined,
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+  }
+
+  const out = await pipeline.jpeg({ quality: 86, mozjpeg: true }).toBuffer();
+  return { buffer: out, mime: "image/jpeg" };
+}
+
 /** 相对整张海报的裁切框，取值 0~1 */
 export type NormalizedCrop = {
   x: number;

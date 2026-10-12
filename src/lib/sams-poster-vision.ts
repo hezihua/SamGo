@@ -2,6 +2,7 @@ import { parseProductPayload, type ParsedProductFields } from "@/lib/product-fie
 import {
   fallbackSamsHeroCrop,
   parseNormalizedCrop,
+  preparePosterVisionImage,
   type NormalizedCrop,
 } from "@/lib/poster-product-crop";
 
@@ -23,6 +24,11 @@ const SAMS_POSTER_SYSTEM = `你是山姆会员店（Sam's Club 中国）微信�
 
 读不清名称或价格时，对应字段用 null。`;
 
+const OPENROUTER_VL_FALLBACKS = [
+  "qwen/qwen3-vl-30b-a3b-instruct",
+  "qwen/qwen2.5-vl-72b-instruct",
+] as const;
+
 type RawVisionJson = {
   name?: unknown;
   price?: unknown;
@@ -42,6 +48,15 @@ type VisionConfig = {
   baseUrl: string;
   model: string;
   extraHeaders: Record<string, string>;
+};
+
+type OpenRouterErrorBody = {
+  error?: {
+    message?: string;
+    code?: number;
+    metadata?: { raw?: string };
+  };
+  choices?: { message?: { content?: string } }[];
 };
 
 function isOpenRouterKey(apiKey: string): boolean {
@@ -73,7 +88,7 @@ function visionConfig(): VisionConfig | null {
   const model =
     process.env.OPENAI_VISION_MODEL?.trim() ||
     (openRouter
-      ? "qwen/qwen2.5-vl-72b-instruct"
+      ? "qwen/qwen3-vl-30b-a3b-instruct"
       : dashScopeKey
         ? "qwen-vl-plus"
         : "gpt-4o-mini");
@@ -91,6 +106,100 @@ function visionConfig(): VisionConfig | null {
   return { apiKey, baseUrl, model, extraHeaders };
 }
 
+function visionModelCandidates(cfg: VisionConfig): string[] {
+  const list = [cfg.model, ...OPENROUTER_VL_FALLBACKS];
+  return [...new Set(list.filter(Boolean))];
+}
+
+function formatVisionApiError(
+  status: number,
+  body: OpenRouterErrorBody,
+): string {
+  const err = body.error;
+  const raw = err?.metadata?.raw?.trim();
+  const base = raw || err?.message || `识别服务错误 (${status})`;
+
+  if (/not available in your region/i.test(base)) {
+    return `${base}。请改用 qwen/qwen3-vl-30b-a3b-instruct 或 DASHSCOPE_API_KEY。`;
+  }
+  if (/no endpoints found/i.test(base)) {
+    return `${base}。请设 OPENAI_VISION_MODEL=qwen/qwen3-vl-30b-a3b-instruct。`;
+  }
+  if (
+    err?.code === 429 ||
+    /rate-limit|rate limit|Provider returned error/i.test(base)
+  ) {
+    return `${base}（OpenRouter 限流或上游繁忙，已自动换模型重试；仍失败请稍后再试或在 OpenRouter 绑定自有 Key）`;
+  }
+  return base;
+}
+
+function isRetryableVisionError(status: number, body: OpenRouterErrorBody): boolean {
+  const msg = body.error?.message ?? "";
+  if (status === 429) return true;
+  if (/Provider returned error|rate-limit|rate limit|timeout|overloaded/i.test(msg)) {
+    return true;
+  }
+  const raw = body.error?.metadata?.raw ?? "";
+  return /rate-limit|temporarily|retry shortly/i.test(raw);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callVisionChat(
+  cfg: VisionConfig,
+  model: string,
+  dataUrl: string,
+): Promise<{ ok: true; text: string } | { ok: false; status: number; body: OpenRouterErrorBody }> {
+  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${cfg.apiKey}`,
+      "Content-Type": "application/json",
+      ...cfg.extraHeaders,
+    },
+    body: JSON.stringify({
+      model,
+      ...(model.includes("qwen")
+        ? {}
+        : { response_format: { type: "json_object" } }),
+      temperature: 0.1,
+      max_tokens: 1200,
+      messages: [
+        { role: "system", content: SAMS_POSTER_SYSTEM },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "请识别这张山姆分享海报上的商品信息。" },
+            {
+              type: "image_url",
+              image_url: { url: dataUrl, detail: "auto" },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  const body = (await res.json()) as OpenRouterErrorBody;
+  if (!res.ok) {
+    return { ok: false, status: res.status, body };
+  }
+
+  const text = body.choices?.[0]?.message?.content?.trim();
+  if (!text) {
+    return {
+      ok: false,
+      status: 502,
+      body: { error: { message: "识别结果为空" } },
+    };
+  }
+
+  return { ok: true, text };
+}
+
 export function isPosterVisionConfigured(): boolean {
   return visionConfig() !== null;
 }
@@ -104,57 +213,34 @@ export async function extractPosterFromImage(
     throw new Error("未配置 OPENAI_API_KEY，无法识别海报");
   }
 
-  const mime = contentType.split(";")[0].trim() || "image/jpeg";
-  const base64 = buffer.toString("base64");
-  const dataUrl = `data:${mime};base64,${base64}`;
+  const prepared = await preparePosterVisionImage(buffer);
+  const dataUrl = `data:${prepared.mime};base64,${prepared.buffer.toString("base64")}`;
 
-  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${cfg.apiKey}`,
-      "Content-Type": "application/json",
-      ...cfg.extraHeaders,
-    },
-    body: JSON.stringify({
-      model: cfg.model,
-      ...(cfg.model.includes("qwen")
-        ? {}
-        : { response_format: { type: "json_object" } }),
-      temperature: 0.1,
-      messages: [
-        { role: "system", content: SAMS_POSTER_SYSTEM },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "请识别这张山姆分享海报上的商品信息。" },
-            { type: "image_url", image_url: { url: dataUrl, detail: "high" } },
-          ],
-        },
-      ],
-    }),
-  });
+  const models = cfg.baseUrl.includes("openrouter.ai")
+    ? visionModelCandidates(cfg)
+    : [cfg.model];
 
-  const body = (await res.json()) as {
-    error?: { message?: string };
-    choices?: { message?: { content?: string } }[];
-  };
+  let lastError = "识别失败";
 
-  if (!res.ok) {
-    const raw = body.error?.message ?? `识别服务错误 (${res.status})`;
-    let msg = raw;
-    if (/not available in your region/i.test(raw)) {
-      msg = `${raw}。请改用 qwen/qwen2.5-vl-72b-instruct 或 DASHSCOPE_API_KEY。`;
-    } else if (/no endpoints found/i.test(raw)) {
-      msg = `${raw}。该模型在 OpenRouter 已下线，请设 OPENAI_VISION_MODEL=qwen/qwen2.5-vl-72b-instruct 后重启 dev。`;
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = await callVisionChat(cfg, model, dataUrl);
+      if (result.ok) {
+        return parseVisionText(result.text);
+      }
+
+      lastError = formatVisionApiError(result.status, result.body);
+      if (!isRetryableVisionError(result.status, result.body)) {
+        break;
+      }
+      await sleep(800 * (attempt + 1));
     }
-    throw new Error(msg);
   }
 
-  const text = body.choices?.[0]?.message?.content?.trim();
-  if (!text) {
-    throw new Error("识别结果为空");
-  }
+  throw new Error(lastError);
+}
 
+function parseVisionText(text: string): PosterExtractResult {
   let raw: RawVisionJson;
   try {
     raw = JSON.parse(text) as RawVisionJson;
