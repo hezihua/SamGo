@@ -98,7 +98,8 @@ function normalizeImageContentType(
   throw new Error("仅支持 JPG / PNG / WebP / GIF");
 }
 
-export async function uploadProductImage(
+async function uploadImageToPrefix(
+  prefix: string,
   buffer: Buffer,
   contentType: string,
   originalName: string,
@@ -112,7 +113,7 @@ export async function uploadProductImage(
     originalName.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "";
   const extFromMime = normalized.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
   const ext = extFromName || extFromMime;
-  const objectKey = `products/${randomUUID()}.${ext}`;
+  const objectKey = `${prefix.replace(/\/$/, "")}/${randomUUID()}.${ext}`;
 
   const client = createOssClient();
   await client.put(objectKey, buffer, {
@@ -120,6 +121,24 @@ export async function uploadProductImage(
   });
 
   return publicObjectUrl(objectKey);
+}
+
+/** 已审核商品主图 */
+export async function uploadProductImage(
+  buffer: Buffer,
+  contentType: string,
+  originalName: string,
+): Promise<string> {
+  return uploadImageToPrefix("products", buffer, contentType, originalName);
+}
+
+/** 小程序用户提交的山姆分享海报（待后台识图审核） */
+export async function uploadSubmissionPosterImage(
+  buffer: Buffer,
+  contentType: string,
+  originalName: string,
+): Promise<string> {
+  return uploadImageToPrefix("product-submissions", buffer, contentType, originalName);
 }
 
 export function isOssConfigured(): boolean {

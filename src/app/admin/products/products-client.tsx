@@ -9,6 +9,8 @@ import {
   updateProduct,
 } from "./actions";
 import { ImageUploadField } from "./image-upload-field";
+import { isPosterSubmissionPlaceholder } from "@/lib/product-fields";
+import { RecognizePosterButton } from "./pending-poster-actions";
 import { PosterImportPanel } from "./poster-import-panel";
 
 export type ProductRow = {
@@ -121,7 +123,9 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
 
       {tab === "pending" ? (
         <>
-          <p style={styles.tabHint}>小程序用户提交的商品在此审核；通过后进入「已上架」。</p>
+          <p style={styles.tabHint}>
+            小程序用户上传山姆分享海报后在此审核：先点「识图填字段」，确认无误再通过；通过后进入「已上架」。
+          </p>
           {pending.length === 0 && rejected.length === 0 ? (
             <p style={styles.empty}>暂无待审核商品</p>
           ) : null}
@@ -129,23 +133,58 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
             <>
               <h3 style={styles.sectionTitle}>待审核（{pending.length}）</h3>
               <ul style={styles.list}>
-                {pending.map((product) => (
+                {pending.map((product) => {
+                  const posterPending = isPosterSubmissionPlaceholder(product);
+                  return (
                   <li key={product.id} style={styles.rowPending}>
-                    <div style={styles.rowMain}>
-                      <span style={styles.rowName}>{product.name}</span>
-                      <span style={styles.rowPrice}>¥{product.price}</span>
-                      <span style={styles.tag}>{product.category}</span>
-                      <span style={styles.submitter}>
-                        提交人：{product.profiles?.nickname?.trim() || "微信用户"}
-                      </span>
+                    <div style={styles.pendingTop}>
+                      {product.image_url ? (
+                        <a
+                          href={product.image_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={styles.posterLink}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={product.image_url}
+                            alt=""
+                            style={styles.posterThumb}
+                          />
+                        </a>
+                      ) : null}
+                      <div style={styles.rowMain}>
+                        <span style={styles.rowName}>
+                          {posterPending ? "山姆分享海报（待识图）" : product.name}
+                        </span>
+                        {!posterPending ? (
+                          <>
+                            <span style={styles.rowPrice}>¥{product.price}</span>
+                            <span style={styles.tag}>{product.category}</span>
+                          </>
+                        ) : (
+                          <span style={styles.tagMuted}>上传海报 · 待识图</span>
+                        )}
+                        <span style={styles.submitter}>
+                          提交人：{product.profiles?.nickname?.trim() || "微信用户"}
+                        </span>
+                      </div>
                     </div>
                     <div style={styles.reviewActions}>
-                      <form action={approveProduct}>
-                        <input type="hidden" name="id" value={product.id} />
-                        <button type="submit" style={styles.primaryButton}>
-                          通过
-                        </button>
-                      </form>
+                      {posterPending ? (
+                        <RecognizePosterButton
+                          productId={product.id}
+                          buttonStyle={styles.primaryButton}
+                          errorStyle={styles.recognizeError}
+                        />
+                      ) : (
+                        <form action={approveProduct}>
+                          <input type="hidden" name="id" value={product.id} />
+                          <button type="submit" style={styles.primaryButton}>
+                            通过
+                          </button>
+                        </form>
+                      )}
                       <form action={rejectProduct} style={styles.rejectForm}>
                         <input type="hidden" name="id" value={product.id} />
                         <input
@@ -168,7 +207,8 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
                       </button>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </>
           ) : null}
@@ -458,6 +498,35 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     border: "1px solid #fde68a",
     background: "#fffbeb",
+  },
+  pendingTop: {
+    display: "flex",
+    gap: 12,
+    alignItems: "flex-start",
+  },
+  posterLink: {
+    flexShrink: 0,
+    lineHeight: 0,
+  },
+  posterThumb: {
+    width: 72,
+    height: 128,
+    objectFit: "cover",
+    borderRadius: 8,
+    border: "1px solid #e2e8f0",
+    background: "#fff",
+  },
+  tagMuted: {
+    fontSize: 12,
+    padding: "2px 8px",
+    borderRadius: 999,
+    background: "#fef3c7",
+    color: "#92400e",
+  },
+  recognizeError: {
+    fontSize: 12,
+    color: "#b91c1c",
+    maxWidth: 220,
   },
   rowMuted: {
     display: "flex",

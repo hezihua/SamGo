@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parseProductPayload } from "@/lib/product-fields";
+import { resolveProductSubmitPayload } from "@/lib/product-fields";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { userFromBearer } from "@/lib/request-user";
 
@@ -18,16 +18,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const body = (await request.json()) as Record<string, unknown>;
-    const fields = parseProductPayload(body);
+    const fields = resolveProductSubmitPayload(body);
     if (!fields) {
       return NextResponse.json(
-        { error: "\u8bf7\u586b\u5199\u6709\u6548\u7684\u5546\u54c1\u540d\u79f0\u4e0e\u4ef7\u683c" },
+        { error: "\u8bf7\u4e0a\u4f20\u5c71\u59c6\u5206\u4eab\u6d77\u62a5\u56fe\u7247" },
         { status: 400 }
       );
-    }
-
-    if (!fields.image_url) {
-      return NextResponse.json({ error: "\u8bf7\u4e0a\u4f20\u5546\u54c1\u56fe\u7247" }, { status: 400 });
     }
 
     const admin = createAdminClient();

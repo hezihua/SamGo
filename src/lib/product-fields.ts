@@ -53,3 +53,61 @@ export function parseProductFormData(formData: FormData): ParsedProductFields | 
     description: formData.get("description"),
   });
 }
+
+/** 小程序仅上传山姆海报、待管理端识图时的占位名称 */
+export const POSTER_SUBMISSION_PLACEHOLDER_NAME = "（待识图）山姆海报";
+
+export function isPosterSubmissionPlaceholder(row: {
+  name?: string | null;
+}): boolean {
+  const n = readStr(row.name);
+  return (
+    n === POSTER_SUBMISSION_PLACEHOLDER_NAME || n.startsWith("（待识图）")
+  );
+}
+
+export function parsePosterSubmissionPayload(body: {
+  image_url?: unknown;
+  poster_url?: unknown;
+}): ParsedProductFields | null {
+  const image_url = readStr(body.image_url) || readStr(body.poster_url);
+  if (!image_url || !/^https:\/\//i.test(image_url)) {
+    return null;
+  }
+  return {
+    name: POSTER_SUBMISSION_PLACEHOLDER_NAME,
+    price: 0,
+    category: "其他",
+    unit: "件",
+    image_url,
+    description: "用户提交山姆分享海报，待管理员识图审核。",
+  };
+}
+
+/** 完整表单或仅海报 URL（小程序提报） */
+export function resolveProductSubmitPayload(body: {
+  name?: unknown;
+  price?: unknown;
+  category?: unknown;
+  unit?: unknown;
+  image_url?: unknown;
+  poster_url?: unknown;
+  description?: unknown;
+}): ParsedProductFields | null {
+  const hasPosterOnly =
+    !readStr(body.name) &&
+    (body.price === undefined ||
+      body.price === null ||
+      readStr(String(body.price ?? "")) === "") &&
+    Boolean(readStr(body.image_url) || readStr(body.poster_url));
+
+  if (hasPosterOnly) {
+    return parsePosterSubmissionPayload(body);
+  }
+
+  const fields = parseProductPayload(body);
+  if (!fields?.image_url) {
+    return null;
+  }
+  return fields;
+}

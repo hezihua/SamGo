@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { clearAdminSession, isAdminSession } from "@/lib/admin-auth";
-import { parseProductFormData } from "@/lib/product-fields";
+import {
+  isPosterSubmissionPlaceholder,
+  parseProductFormData,
+} from "@/lib/product-fields";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireAdmin() {
@@ -62,6 +65,20 @@ export async function approveProduct(formData: FormData) {
   }
 
   const admin = createAdminClient();
+  const { data: row, error: fetchError } = await admin
+    .from("products")
+    .select("name")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError || !row) {
+    redirect("/admin/products?error=invalid");
+  }
+
+  if (isPosterSubmissionPlaceholder(row)) {
+    redirect("/admin/products?error=need-recognize");
+  }
+
   const { error } = await admin
     .from("products")
     .update({ review_status: "approved", review_note: null })

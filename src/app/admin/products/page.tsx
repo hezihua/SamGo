@@ -76,6 +76,9 @@ export default async function AdminProductsPage({
       {error === "delete" ? (
         <p style={styles.error}>删除失败，该商品可能仍被订单引用</p>
       ) : null}
+      {error === "need-recognize" ? (
+        <p style={styles.error}>请先对山姆海报点击「识图填字段」，再审核通过</p>
+      ) : null}
       {fetchError ? (
         <p style={styles.error}>加载商品失败：{fetchError.message}</p>
       ) : null}

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { isOssConfigured, uploadProductImage } from "@/lib/aliyun-oss";
+import {
+  isOssConfigured,
+  uploadProductImage,
+  uploadSubmissionPosterImage,
+} from "@/lib/aliyun-oss";
 import { userFromBearer } from "@/lib/request-user";
 
 export async function POST(request: Request) {
@@ -29,7 +33,10 @@ export async function POST(request: Request) {
       (file.name && file.name.trim()) ||
       (typeof hint === "string" && hint.trim()) ||
       "upload.jpg";
-    const url = await uploadProductImage(buffer, contentType, originalName);
+    const kind = String(formData.get("kind") ?? "").trim().toLowerCase();
+    const upload =
+      kind === "poster" ? uploadSubmissionPosterImage : uploadProductImage;
+    const url = await upload(buffer, contentType, originalName);
 
     return NextResponse.json({ url });
   } catch (err) {
