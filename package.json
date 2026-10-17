@@ -12,7 +12,8 @@
     "db:apply:007": "node scripts/apply-supabase-migration.mjs supabase/migrations/007_product_review.sql",
     "db:apply:008": "node scripts/apply-supabase-migration.mjs supabase/migrations/008_group_order_product_price.sql",
     "db:apply:009": "node scripts/apply-supabase-migration.mjs supabase/migrations/009_product_review_note.sql",
-    "db:apply:010": "node scripts/apply-supabase-migration.mjs supabase/migrations/010_simplify_group_order_status.sql"
+    "db:apply:010": "node scripts/apply-supabase-migration.mjs supabase/migrations/010_simplify_group_order_status.sql",
+    "db:apply:011": "node scripts/apply-supabase-migration.mjs supabase/migrations/011_product_search_aliases.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

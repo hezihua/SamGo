@@ -8,6 +8,7 @@ import {
   extractPosterFromImage,
   isPosterVisionConfigured,
 } from "@/lib/sams-poster-vision";
+import { suggestSearchAliases } from "@/lib/search-aliases";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -95,6 +96,8 @@ export async function POST(_request: Request, context: RouteContext) {
         unit: product.unit,
         description: product.description,
         image_url,
+        search_aliases:
+          product.search_aliases ?? suggestSearchAliases(product.name),
       })
       .eq("id", id)
       .select(

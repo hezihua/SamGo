@@ -21,6 +21,7 @@ export type ProductRow = {
   unit: string;
   image_url: string | null;
   description: string | null;
+  search_aliases?: string | null;
   review_status: "approved" | "pending" | "rejected";
   review_note?: string | null;
   created_at?: string;
@@ -29,7 +30,13 @@ export type ProductRow = {
 
 export type ProductDraft = Pick<
   ProductRow,
-  "name" | "price" | "category" | "unit" | "image_url" | "description"
+  | "name"
+  | "price"
+  | "category"
+  | "unit"
+  | "image_url"
+  | "description"
+  | "search_aliases"
 >;
 
 type ModalState =
@@ -364,6 +371,15 @@ function ProductForm(props: ProductFormProps) {
             rows={3}
             defaultValue={values?.description ?? ""}
             style={styles.textarea}
+          />
+        </label>
+        <label style={styles.label}>
+          搜索别名
+          <input
+            name="search_aliases"
+            placeholder="逗号分隔，如：香蕉,蕉（留空则按名称自动推断）"
+            defaultValue={values?.search_aliases ?? ""}
+            style={styles.input}
           />
         </label>
         <div style={styles.formActions}>

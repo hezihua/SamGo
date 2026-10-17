@@ -1,5 +1,7 @@
 export type ProductReviewStatus = "approved" | "pending" | "rejected";
 
+import { normalizeSearchAliasesInput } from "@/lib/search-aliases";
+
 export type ParsedProductFields = {
   name: string;
   price: number;
@@ -7,6 +9,7 @@ export type ParsedProductFields = {
   unit: string;
   image_url: string | null;
   description: string | null;
+  search_aliases: string | null;
 };
 
 function readStr(v: unknown): string {
@@ -20,6 +23,7 @@ export function parseProductPayload(body: {
   unit?: unknown;
   image_url?: unknown;
   description?: unknown;
+  search_aliases?: unknown;
 }): ParsedProductFields | null {
   const name = readStr(body.name);
   const priceRaw = body.price;
@@ -35,12 +39,13 @@ export function parseProductPayload(body: {
   const image_url = imageRaw ? imageRaw : null;
   const descRaw = readStr(body.description);
   const description = descRaw ? descRaw : null;
+  const search_aliases = normalizeSearchAliasesInput(body.search_aliases);
 
   if (!name || !Number.isFinite(price) || price < 0) {
     return null;
   }
 
-  return { name, price, category, unit, image_url, description };
+  return { name, price, category, unit, image_url, description, search_aliases };
 }
 
 export function parseProductFormData(formData: FormData): ParsedProductFields | null {
@@ -51,6 +56,7 @@ export function parseProductFormData(formData: FormData): ParsedProductFields | 
     unit: formData.get("unit"),
     image_url: formData.get("image_url"),
     description: formData.get("description"),
+    search_aliases: formData.get("search_aliases"),
   });
 }
 
@@ -81,6 +87,7 @@ export function parsePosterSubmissionPayload(body: {
     unit: "件",
     image_url,
     description: "用户提交山姆分享海报，待管理员识图审核。",
+    search_aliases: null,
   };
 }
 

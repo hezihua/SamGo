@@ -188,7 +188,7 @@
           <input
             class="add-picker-search-input"
             type="text"
-            placeholder="搜索商品名称"
+            placeholder="搜索商品名称或别名"
             value="{{addCatalogSearch}}"
             bindinput="onAddCatalogSearchInput"
             confirm-type="search"

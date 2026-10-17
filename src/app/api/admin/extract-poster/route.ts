@@ -7,6 +7,7 @@ import {
   extractPosterFromImage,
   isPosterVisionConfigured,
 } from "@/lib/sams-poster-vision";
+import { suggestSearchAliases } from "@/lib/search-aliases";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
@@ -66,8 +67,14 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: saved, error: dbError } = await admin
       .from("products")
-      .insert({ ...product, review_status: "approved" })
-      .select("id, name, price, category, unit, image_url, description")
+      .insert({
+        ...product,
+        search_aliases: product.search_aliases ?? suggestSearchAliases(product.name),
+        review_status: "approved",
+      })
+      .select(
+        "id, name, price, category, unit, image_url, description, search_aliases",
+      )
       .single();
 
     if (dbError) {

@@ -7,7 +7,17 @@ import {
   isPosterSubmissionPlaceholder,
   parseProductFormData,
 } from "@/lib/product-fields";
+import { suggestSearchAliases } from "@/lib/search-aliases";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { ParsedProductFields } from "@/lib/product-fields";
+
+function withDefaultSearchAliases(fields: ParsedProductFields): ParsedProductFields {
+  if (fields.search_aliases) return fields;
+  return {
+    ...fields,
+    search_aliases: suggestSearchAliases(fields.name),
+  };
+}
 
 async function requireAdmin() {
   if (!(await isAdminSession())) {
@@ -22,10 +32,11 @@ export async function adminLogout() {
 
 export async function createProduct(formData: FormData) {
   await requireAdmin();
-  const fields = parseProductFormData(formData);
-  if (!fields) {
+  const parsed = parseProductFormData(formData);
+  if (!parsed) {
     redirect("/admin/products?error=invalid");
   }
+  const fields = withDefaultSearchAliases(parsed);
 
   const admin = createAdminClient();
   const { error } = await admin
@@ -42,10 +53,11 @@ export async function createProduct(formData: FormData) {
 export async function updateProduct(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "").trim();
-  const fields = parseProductFormData(formData);
-  if (!id || !fields) {
+  const parsed = parseProductFormData(formData);
+  if (!id || !parsed) {
     redirect("/admin/products?error=invalid");
   }
+  const fields = withDefaultSearchAliases(parsed);
 
   const admin = createAdminClient();
   const { error } = await admin.from("products").update(fields).eq("id", id);

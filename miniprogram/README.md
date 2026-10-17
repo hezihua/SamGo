@@ -12,6 +12,7 @@
    - `supabase/migrations/008_group_order_product_price.sql`（本单成交价；`pnpm db:apply:008`）
    - `supabase/migrations/009_product_review_note.sql`（驳回原因；`pnpm db:apply:009`）
    - `supabase/migrations/010_simplify_group_order_status.sql`（仅 open/closed；`pnpm db:apply:010`）
+   - `supabase/migrations/011_product_search_aliases.sql`（商品搜索别名；`pnpm db:apply:011`）
 2. 在项目根目录 `.env.local` 配置：
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `WECHAT_MINI_APP_ID` / `WECHAT_MINI_APP_SECRET`

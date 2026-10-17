@@ -2,7 +2,7 @@ const { getSession } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
 const { rest } = require("../../utils/supabase");
 const { resolveOrderIdFromOptions } = require("../../utils/order-scene");
-const { filterProductsByName } = require("../../utils/product-search");
+const { buildCatalogPath } = require("../../utils/catalog-api");
 
 const PENDING_ORDER_KEY = "samgo_pending_order_id";
 
@@ -281,8 +281,25 @@ Page({
     }
   },
 
+  async loadAddCatalog() {
+    const path = buildCatalogPath({
+      q: this.data.addCatalogSearch,
+      limit: 100,
+      offset: 0,
+    });
+    const data = await requestWithAuth(path, "GET");
+    const inOrder = new Set((this.data.products || []).map((p) => p.id));
+    const addCatalogDisplay = (data.products || []).filter((p) => !inOrder.has(p.id));
+    this.setData({
+      addCatalog: addCatalogDisplay,
+      addCatalogDisplay,
+      addCatalogLoading: false,
+    });
+  },
+
   async onShowAddPicker() {
     if (!this.data.canManageSkus) return;
+    this._addCatalogSearchTimer = null;
     this.setData({
       addPickerVisible: true,
       addCatalogLoading: true,
@@ -291,13 +308,7 @@ Page({
       addCatalogSearch: "",
     });
     try {
-      const rows = await rest(
-        "products?select=id,name,price,image_url&order=name.asc",
-      );
-      const inOrder = new Set((this.data.products || []).map((p) => p.id));
-      const addCatalog = (rows || []).filter((p) => !inOrder.has(p.id));
-      const addCatalogDisplay = filterProductsByName(addCatalog, "");
-      this.setData({ addCatalog, addCatalogDisplay, addCatalogLoading: false });
+      await this.loadAddCatalog();
     } catch (err) {
       this.setData({ addPickerVisible: false, addCatalogLoading: false });
       wx.showToast({ title: err.message || "\u52a0\u8f7d\u5931\u8d25", icon: "none" });
@@ -310,16 +321,28 @@ Page({
 
   onAddCatalogSearchInput(e) {
     const addCatalogSearch = e.detail.value || "";
-    const addCatalogDisplay = filterProductsByName(
-      this.data.addCatalog,
-      addCatalogSearch,
-    );
-    this.setData({ addCatalogSearch, addCatalogDisplay });
+    this.setData({ addCatalogSearch, addCatalogLoading: true });
+    if (this._addCatalogSearchTimer) {
+      clearTimeout(this._addCatalogSearchTimer);
+    }
+    this._addCatalogSearchTimer = setTimeout(() => {
+      this.loadAddCatalog().catch((err) => {
+        wx.showToast({ title: err.message || "搜索失败", icon: "none" });
+        this.setData({ addCatalogLoading: false });
+      });
+    }, 350);
   },
 
   onClearAddCatalogSearch() {
-    const addCatalogDisplay = filterProductsByName(this.data.addCatalog, "");
-    this.setData({ addCatalogSearch: "", addCatalogDisplay });
+    if (this._addCatalogSearchTimer) {
+      clearTimeout(this._addCatalogSearchTimer);
+      this._addCatalogSearchTimer = null;
+    }
+    this.setData({ addCatalogSearch: "", addCatalogLoading: true });
+    this.loadAddCatalog().catch((err) => {
+      wx.showToast({ title: err.message || "加载失败", icon: "none" });
+      this.setData({ addCatalogLoading: false });
+    });
   },
 
   async onPickAddProduct(e) {

@@ -81,6 +81,47 @@
   padding-bottom: 24rpx;
 }
 
+.category-scroll {
+  width: 100%;
+  margin-bottom: 20rpx;
+  white-space: nowrap;
+}
+
+.category-row {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 16rpx;
+  padding-bottom: 4rpx;
+}
+
+.category-chip {
+  flex-shrink: 0;
+  padding: 12rpx 28rpx;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  background: #f5f6f8;
+  border-radius: 999rpx;
+  border: 2rpx solid transparent;
+}
+
+.category-chip.active {
+  color: var(--color-primary);
+  background: #e8f4fd;
+  border-color: rgba(0, 96, 169, 0.25);
+  font-weight: 600;
+}
+
+.catalog-meta {
+  display: block;
+  font-size: 24rpx;
+  margin-bottom: 12rpx;
+}
+
+.catalog-loading-more {
+  padding-top: 8rpx;
+  padding-bottom: 16rpx;
+}
+
 .product-grid {
   display: flex;
   flex-wrap: wrap;

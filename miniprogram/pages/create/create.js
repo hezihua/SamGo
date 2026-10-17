@@ -1,7 +1,11 @@
 const { getSession } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
-const { rest } = require("../../utils/supabase");
-const { filterProductsByName } = require("../../utils/product-search");
+const {
+  CATALOG_DEFAULT_LIMIT,
+  buildCatalogPath,
+} = require("../../utils/catalog-api");
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 function todayString() {
   const d = new Date();
@@ -11,6 +15,18 @@ function todayString() {
   return `${y}-${m}-${day}`;
 }
 
+function mergeSelectedFlags(rows, selectedIds) {
+  const map = selectedIds || {};
+  return (rows || []).map((p) => ({
+    ...p,
+    selected: Boolean(map[p.id]),
+  }));
+}
+
+function countSelected(selectedIds) {
+  return Object.keys(selectedIds || {}).filter((k) => selectedIds[k]).length;
+}
+
 Page({
   data: {
     title: "",
@@ -18,10 +34,16 @@ Page({
     date: "",
     time: "18:00",
     today: "",
-    products: [],
     displayProducts: [],
     productSearch: "",
+    categoryFilter: "",
+    categories: [],
     productsLoading: true,
+    catalogLoadingMore: false,
+    catalogTotal: 0,
+    catalogOffset: 0,
+    hasMore: false,
+    selectedIds: {},
     selectedCount: 0,
     loading: false,
     error: "",
@@ -33,23 +55,79 @@ Page({
       wx.redirectTo({ url: "/pages/home/home" });
       return;
     }
+    this._searchDebounceTimer = null;
     this.setData({ today: todayString() });
-    this.loadProducts();
+    this.loadProducts({ reset: true });
   },
 
-  async loadProducts() {
-    this.setData({ productsLoading: true, error: "" });
+  onUnload() {
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+  },
+
+  onPullDownRefresh() {
+    this.loadProducts({ reset: true }).finally(() => {
+      wx.stopPullDownRefresh();
+    });
+  },
+
+  onReachBottom() {
+    if (this.data.hasMore && !this.data.productsLoading && !this.data.catalogLoadingMore) {
+      this.loadProducts({ append: true });
+    }
+  },
+
+  async loadProducts(options) {
+    const reset = !options || options.reset !== false;
+    const append = options && options.append;
+
+    if (append && !this.data.hasMore) return;
+
+    if (reset) {
+      this.setData({ productsLoading: true, error: "", catalogOffset: 0 });
+    } else {
+      this.setData({ catalogLoadingMore: true });
+    }
+
+    const offset = reset ? 0 : this.data.catalogOffset;
+    const path = buildCatalogPath({
+      q: this.data.productSearch,
+      category: this.data.categoryFilter,
+      limit: CATALOG_DEFAULT_LIMIT,
+      offset,
+    });
+
     try {
-      const rows = await rest(
-        "products?select=id,name,price,category,image_url&order=name.asc",
-      );
-      const products = (rows || []).map((p) => ({ ...p, selected: false }));
-      const displayProducts = filterProductsByName(products, this.data.productSearch);
-      this.setData({ products, displayProducts, productsLoading: false });
+      const data = await requestWithAuth(path, "GET");
+      const rows = data.products || [];
+      const merged = mergeSelectedFlags(rows, this.data.selectedIds);
+      const displayProducts = append
+        ? this.data.displayProducts.concat(merged)
+        : merged;
+
+      const total = typeof data.total === "number" ? data.total : rows.length;
+      const nextOffset = offset + rows.length;
+      const categories =
+        Array.isArray(data.categories) && data.categories.length > 0
+          ? data.categories
+          : this.data.categories;
+
+      this.setData({
+        displayProducts,
+        categories,
+        catalogTotal: total,
+        catalogOffset: nextOffset,
+        hasMore: nextOffset < total,
+        productsLoading: false,
+        catalogLoadingMore: false,
+      });
     } catch (err) {
       this.setData({
         productsLoading: false,
-        error: err.message || "\u52a0\u8f7d\u5546\u54c1\u5931\u8d25",
+        catalogLoadingMore: false,
+        error: err.message || "加载商品失败",
       });
     }
   },
@@ -57,23 +135,52 @@ Page({
   onToggleProduct(e) {
     const id = e.currentTarget.dataset.id;
     if (!id) return;
-    const products = this.data.products.map((p) =>
-      p.id === id ? { ...p, selected: !p.selected } : p,
+    const selectedIds = { ...this.data.selectedIds };
+    if (selectedIds[id]) {
+      delete selectedIds[id];
+    } else {
+      selectedIds[id] = true;
+    }
+    const displayProducts = this.data.displayProducts.map((p) =>
+      p.id === id ? { ...p, selected: Boolean(selectedIds[id]) } : p,
     );
-    const selectedCount = products.filter((p) => p.selected).length;
-    const displayProducts = filterProductsByName(products, this.data.productSearch);
-    this.setData({ products, displayProducts, selectedCount });
+    this.setData({
+      selectedIds,
+      displayProducts,
+      selectedCount: countSelected(selectedIds),
+    });
   },
 
   onProductSearchInput(e) {
     const productSearch = e.detail.value || "";
-    const displayProducts = filterProductsByName(this.data.products, productSearch);
-    this.setData({ productSearch, displayProducts });
+    this.setData({ productSearch });
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+    }
+    this._searchDebounceTimer = setTimeout(() => {
+      this.loadProducts({ reset: true });
+    }, SEARCH_DEBOUNCE_MS);
   },
 
   onClearProductSearch() {
-    const displayProducts = filterProductsByName(this.data.products, "");
-    this.setData({ productSearch: "", displayProducts });
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+    this.setData({ productSearch: "" });
+    this.loadProducts({ reset: true });
+  },
+
+  onCategoryTap(e) {
+    const cat = e.currentTarget.dataset.cat;
+    const categoryFilter = cat === undefined || cat === null ? "" : String(cat);
+    if (categoryFilter === this.data.categoryFilter) return;
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+    this.setData({ categoryFilter });
+    this.loadProducts({ reset: true });
   },
 
   onTitleInput(e) {
@@ -99,23 +206,23 @@ Page({
     const trimmedTitle = (title || "").trim();
     const trimmedAddress = (deliveryAddress || "").trim();
     if (!trimmedTitle) {
-      this.setData({ error: "\u8bf7\u8f93\u5165\u62fc\u5355\u6807\u9898" });
+      this.setData({ error: "请输入拼单标题" });
       return;
     }
     if (!trimmedAddress) {
-      this.setData({ error: "\u8bf7\u8f93\u5165\u53d6\u8d27\u5730\u5740" });
+      this.setData({ error: "请输入取货地址" });
       return;
     }
     if (!date) {
-      this.setData({ error: "\u8bf7\u9009\u62e9\u622a\u6b62\u65e5\u671f" });
+      this.setData({ error: "请选择截止日期" });
       return;
     }
 
-    const product_ids = this.data.products
-      .filter((p) => p.selected)
-      .map((p) => p.id);
+    const product_ids = Object.keys(this.data.selectedIds || {}).filter(
+      (id) => this.data.selectedIds[id],
+    );
     if (product_ids.length === 0) {
-      this.setData({ error: "\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u4e2a\u5546\u54c1" });
+      this.setData({ error: "请至少选择一个商品" });
       return;
     }
 
@@ -138,19 +245,19 @@ Page({
       .then((result) => {
         const orderId = result?.order?.id;
         if (!orderId) {
-          throw new Error("\u521b\u5efa\u5931\u8d25");
+          throw new Error("创建失败");
         }
         return orderId;
       })
       .then((orderId) => {
-        wx.showToast({ title: "\u53d1\u5e03\u6210\u529f", icon: "success" });
+        wx.showToast({ title: "发布成功", icon: "success" });
         setTimeout(() => {
           wx.redirectTo({ url: `/pages/order/detail?id=${orderId}` });
         }, 600);
       })
       .catch((err) => {
         this.setData({
-          error: err.message || "\u53d1\u5e03\u5931\u8d25",
+          error: err.message || "发布失败",
           loading: false,
         });
       });

@@ -45,25 +45,29 @@ function searchTermsForQuery(rawQuery) {
   return Array.from(terms).filter(Boolean);
 }
 
-function nameMatchesTerms(name, terms) {
-  const n = String(name || "");
-  if (!n) return false;
-  const nLower = n.toLowerCase();
+function nameMatchesTerms(name, aliases, terms) {
+  const hay = [String(name || ""), String(aliases || "")]
+    .filter(Boolean)
+    .join("\n");
+  if (!hay) return false;
+  const hayLower = hay.toLowerCase();
   for (let i = 0; i < terms.length; i++) {
     const t = terms[i];
     if (!t) continue;
-    if (n.includes(t)) return true;
-    if (nLower.includes(t.toLowerCase())) return true;
+    if (hay.includes(t)) return true;
+    if (hayLower.includes(t.toLowerCase())) return true;
   }
   return false;
 }
 
-/** 按商品名模糊匹配（子串 + 常见同义词） */
+/** 按商品名 / search_aliases 模糊匹配（子串 + 常见同义词，本地列表用） */
 function filterProductsByName(products, query) {
   const q = String(query || "").trim();
   if (!q) return products || [];
   const terms = searchTermsForQuery(q);
-  return (products || []).filter((p) => nameMatchesTerms(p.name, terms));
+  return (products || []).filter((p) =>
+    nameMatchesTerms(p.name, p.search_aliases, terms),
+  );
 }
 
 module.exports = {
