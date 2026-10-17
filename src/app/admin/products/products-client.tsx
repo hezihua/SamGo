@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   createProduct,
   deleteProduct,
+  deleteProductsBatch,
   rejectProduct,
   updateProduct,
 } from "./actions";
@@ -58,8 +59,48 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
   const rejected = products.filter((p) => p.review_status === "rejected");
   const [tab, setTab] = useState<AdminTab>("approved");
   const [savedFlash, setSavedFlash] = useState<string | null>(null);
+  const [selectedApproved, setSelectedApproved] = useState<Record<string, true>>(
+    {},
+  );
 
   const closeModal = useCallback(() => setModal(null), []);
+
+  const selectedApprovedIds = Object.keys(selectedApproved);
+  const selectedApprovedCount = selectedApprovedIds.length;
+  const allApprovedSelected =
+    approved.length > 0 && selectedApprovedCount === approved.length;
+
+  function toggleApprovedSelect(id: string) {
+    setSelectedApproved((prev) => {
+      const next = { ...prev };
+      if (next[id]) delete next[id];
+      else next[id] = true;
+      return next;
+    });
+  }
+
+  function toggleSelectAllApproved() {
+    if (allApprovedSelected) {
+      setSelectedApproved({});
+      return;
+    }
+    const next: Record<string, true> = {};
+    for (const p of approved) {
+      next[p.id] = true;
+    }
+    setSelectedApproved(next);
+  }
+
+  function confirmBatchDelete(e: React.FormEvent<HTMLFormElement>) {
+    if (selectedApprovedCount === 0) {
+      e.preventDefault();
+      return;
+    }
+    const msg = `确定删除已选 ${selectedApprovedCount} 个已上架商品？此操作不可恢复。`;
+    if (!window.confirm(msg)) {
+      e.preventDefault();
+    }
+  }
 
   useEffect(() => {
     if (!modal) return;
@@ -84,7 +125,10 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
               ...styles.tab,
               ...(tab === "pending" ? styles.tabActive : null),
             }}
-            onClick={() => setTab("pending")}
+            onClick={() => {
+              setTab("pending");
+              setSelectedApproved({});
+            }}
           >
             待审核
             {pendingTabCount > 0 ? (
@@ -273,24 +317,73 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
           {approved.length === 0 ? (
             <p style={styles.empty}>暂无已上架商品，点击「新增商品」添加</p>
           ) : (
-            <ul style={styles.list}>
-              {approved.map((product) => (
-                <li key={product.id} style={styles.row}>
-                  <div style={styles.rowMain}>
-                    <span style={styles.rowName}>{product.name}</span>
-                    <span style={styles.rowPrice}>¥{product.price}</span>
-                    <span style={styles.tag}>{product.category}</span>
-                  </div>
+            <>
+              <div style={styles.batchBar}>
+                <label style={styles.batchSelectAll}>
+                  <input
+                    type="checkbox"
+                    checked={allApprovedSelected}
+                    onChange={toggleSelectAllApproved}
+                    aria-label="全选已上架商品"
+                  />
+                  <span>全选</span>
+                </label>
+                <span style={styles.batchMeta}>
+                  {selectedApprovedCount > 0
+                    ? `已选 ${selectedApprovedCount} 项`
+                    : "勾选后可批量操作"}
+                </span>
+                <form
+                  action={deleteProductsBatch}
+                  style={styles.batchDeleteForm}
+                  onSubmit={confirmBatchDelete}
+                >
+                  <input
+                    type="hidden"
+                    name="ids"
+                    value={selectedApprovedIds.join(",")}
+                  />
                   <button
-                    type="button"
-                    style={styles.secondaryButton}
-                    onClick={() => setModal({ mode: "edit", product })}
+                    type="submit"
+                    style={{
+                      ...styles.dangerButton,
+                      ...(selectedApprovedCount === 0
+                        ? styles.batchButtonDisabled
+                        : null),
+                    }}
+                    disabled={selectedApprovedCount === 0}
                   >
-                    编辑
+                    批量删除
                   </button>
-                </li>
-              ))}
-            </ul>
+                </form>
+              </div>
+              <ul style={styles.list}>
+                {approved.map((product) => (
+                  <li key={product.id} style={styles.row}>
+                    <div style={styles.rowMain}>
+                      <span style={styles.rowName}>{product.name}</span>
+                      <span style={styles.rowPrice}>¥{product.price}</span>
+                      <span style={styles.tag}>{product.category}</span>
+                    </div>
+                    <button
+                      type="button"
+                      style={styles.secondaryButton}
+                      onClick={() => setModal({ mode: "edit", product })}
+                    >
+                      编辑
+                    </button>
+                    <label style={styles.rowCheck} title="加入批量操作">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(selectedApproved[product.id])}
+                        onChange={() => toggleApprovedSelect(product.id)}
+                        aria-label={`选择 ${product.name}`}
+                      />
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </>
       )}
@@ -537,6 +630,48 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     border: "1px solid #e2e8f0",
     background: "#fff",
+  },
+  batchBar: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: "12px 16px",
+    marginBottom: 12,
+    padding: "10px 14px",
+    borderRadius: 10,
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+  },
+  batchSelectAll: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 14,
+    color: "#334155",
+    cursor: "pointer",
+    userSelect: "none",
+  },
+  batchMeta: {
+    flex: 1,
+    minWidth: 120,
+    fontSize: 13,
+    color: "#64748b",
+  },
+  batchDeleteForm: {
+    margin: 0,
+  },
+  batchButtonDisabled: {
+    opacity: 0.45,
+    cursor: "not-allowed",
+  },
+  rowCheck: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    width: 36,
+    height: 36,
+    cursor: "pointer",
   },
   rowPending: {
     display: "flex",

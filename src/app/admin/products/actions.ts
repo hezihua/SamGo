@@ -165,3 +165,33 @@ export async function deleteProduct(formData: FormData) {
   revalidatePath("/admin/products");
   redirect("/admin/products");
 }
+
+export async function deleteProductsBatch(formData: FormData) {
+  await requireAdmin();
+  const raw = String(formData.get("ids") ?? "").trim();
+  const ids = [
+    ...new Set(
+      raw
+        .split(/[,，\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ];
+  if (ids.length === 0) {
+    redirect("/admin/products?error=invalid");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("products")
+    .delete()
+    .in("id", ids)
+    .eq("review_status", "approved");
+
+  if (error) {
+    redirect("/admin/products?error=delete");
+  }
+
+  revalidatePath("/admin/products");
+  redirect("/admin/products");
+}
