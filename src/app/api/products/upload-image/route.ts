@@ -4,6 +4,7 @@ import {
   uploadProductImage,
   uploadSubmissionPosterImage,
 } from "@/lib/aliyun-oss";
+import { logOpsEvent } from "@/lib/ops-log";
 import { userFromBearer } from "@/lib/request-user";
 
 export async function POST(request: Request) {
@@ -13,6 +14,9 @@ export async function POST(request: Request) {
   }
 
   if (!isOssConfigured()) {
+    logOpsEvent("oss_not_configured", "小程序上传图片时 OSS 未配置", {
+      route: "products/upload-image",
+    });
     return NextResponse.json(
       { error: "\u56fe\u7247\u4e0a\u4f20\u672a\u914d\u7f6e" },
       { status: 503 }

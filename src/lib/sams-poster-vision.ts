@@ -1,3 +1,4 @@
+import { logVisionApiFailure } from "@/lib/ops-log";
 import { parseProductPayload, type ParsedProductFields } from "@/lib/product-fields";
 import {
   fallbackSamsHeroCrop,
@@ -230,6 +231,7 @@ export async function extractPosterFromImage(
       }
 
       lastError = formatVisionApiError(result.status, result.body);
+      logVisionApiFailure(result.status, lastError, { model, attempt });
       if (!isRetryableVisionError(result.status, result.body)) {
         break;
       }
@@ -237,6 +239,7 @@ export async function extractPosterFromImage(
     }
   }
 
+  logVisionApiFailure(502, lastError, { stage: "extractPosterFromImage_exhausted" });
   throw new Error(lastError);
 }
 

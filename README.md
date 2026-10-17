@@ -8,7 +8,7 @@ Next.js 提供微信登录等 API，拼单数据在 Supabase；客户端为 `min
 
 在 SQL Editor 按顺序执行（若尚未初始化），或使用 `pnpm db:apply:00x`（见 `package.json`）：
 
-- `001` → `002` → `004`（或 `003`）→ `005` → `006` → **`007` 商品审核** → **`008` 本单价** → **`009` 驳回原因** → **`010` 双状态**
+- `001` → `002` → `004`（或 `003`）→ `005` → `006` → **`007` 商品审核** → **`008` 本单价** → **`009` 驳回原因** → **`010` 双状态** → **`011` search_aliases** → **`012` poster_url**
 
 明细与产品概念见 [docs/PRODUCT.md](./docs/PRODUCT.md)；小程序侧步骤见 [miniprogram/README.md](./miniprogram/README.md)。
 
@@ -51,6 +51,7 @@ scripts/apply-supabase-migration.mjs
 3. 小程序 `config.js` 的 `apiBase` 改为生产域名。
 4. 微信公众平台配置 **request** 合法域名（Next + Supabase）；若展示 OSS 商品图，另配 **downloadFile** 域名。
 5. 真机关闭「不校验合法域名」做一次完整流程：登录 → 发起 → 加购 → 复制汇总 → 截止拼单。
+6. **（可选）Vercel 日志告警**：在 Logs 里对 `[samgo:ops:vision_429]`、`[samgo:ops:oss_fail]` 建 Alert，识图限流或 OSS 失败集中出现时会通知（见 `.env.example` 末尾说明）。
 
 详见 [docs/PRODUCT.md](./docs/PRODUCT.md)。
 

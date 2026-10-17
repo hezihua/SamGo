@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdminSession } from "@/lib/admin-auth";
 import { isOssConfigured, uploadProductImage } from "@/lib/aliyun-oss";
+import { logOpsEvent } from "@/lib/ops-log";
 
 export async function POST(request: Request) {
   if (!(await isAdminSession())) {
@@ -8,6 +9,9 @@ export async function POST(request: Request) {
   }
 
   if (!isOssConfigured()) {
+    logOpsEvent("oss_not_configured", "管理端上传图片时 OSS 未配置", {
+      route: "admin/upload-image",
+    });
     return NextResponse.json({ error: "OSS \u672a\u914d\u7f6e" }, { status: 503 });
   }
 

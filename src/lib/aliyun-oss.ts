@@ -1,5 +1,6 @@
 import OSS from "ali-oss";
 import { randomUUID } from "crypto";
+import { logOssUploadFailure } from "@/lib/ops-log";
 
 function requireEnv(name: string): string {
   const v = process.env[name]?.trim();
@@ -116,9 +117,19 @@ async function uploadImageToPrefix(
   const objectKey = `${prefix.replace(/\/$/, "")}/${randomUUID()}.${ext}`;
 
   const client = createOssClient();
-  await client.put(objectKey, buffer, {
-    headers: { "Content-Type": normalized },
-  });
+  try {
+    await client.put(objectKey, buffer, {
+      headers: { "Content-Type": normalized },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logOssUploadFailure(msg, {
+      prefix,
+      bytes: buffer.length,
+      contentType: normalized,
+    });
+    throw err instanceof Error ? err : new Error(msg);
+  }
 
   return publicObjectUrl(objectKey);
 }
