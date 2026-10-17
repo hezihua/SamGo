@@ -53,6 +53,7 @@
           class="sku-img"
           src="{{item.image_url}}"
           mode="aspectFill"
+          lazy-load
         />
         <view wx:else class="sku-img sku-ph">Sam</view>
         <view class="sku-body">
@@ -209,7 +210,7 @@
           data-id="{{item.id}}"
           bindtap="onPickAddProduct"
         >
-          <image wx:if="{{item.image_url}}" class="add-picker-img" src="{{item.image_url}}" mode="aspectFill" />
+          <image wx:if="{{item.image_url}}" class="add-picker-img" src="{{item.image_url}}" mode="aspectFill" lazy-load />
           <view wx:else class="add-picker-img add-picker-ph">Sam</view>
           <view class="add-picker-info">
             <text class="add-picker-name">{{item.name}}</text>

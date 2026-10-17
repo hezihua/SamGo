@@ -1,8 +1,9 @@
 const { ensureValidSession, clearSession } = require("../../utils/auth");
 const { requestWithAuth, uploadWithAuth } = require("../../utils/api");
 const { getApiBase } = require("../../utils/get-api-base");
+const { compressImageForUpload } = require("../../utils/compress-image");
 
-const CLIENT_BUILD = "1.0.7-poster";
+const CLIENT_BUILD = "1.0.8-compress";
 
 Page({
   data: {
@@ -42,13 +43,19 @@ Page({
 
   uploadTempImage(temp) {
     this.setData({ imageUrl: temp });
-    wx.showLoading({ title: "上传中", mask: true });
-    const extMatch = /\.(\w+)(?:\?|$)/i.exec(temp);
-    const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
-    return uploadWithAuth("/api/products/upload-image", temp, {
-      filename: `poster.${ext}`,
-      kind: "poster",
-    })
+    wx.showLoading({ title: "压缩中", mask: true });
+    this.setPickStatus("压缩图片…");
+    return compressImageForUpload(temp)
+      .then((filePath) => {
+        wx.showLoading({ title: "上传中", mask: true });
+        this.setPickStatus("上传中…");
+        const extMatch = /\.(\w+)(?:\?|$)/i.exec(filePath);
+        const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
+        return uploadWithAuth("/api/products/upload-image", filePath, {
+          filename: `poster.${ext}`,
+          kind: "poster",
+        });
+      })
       .then((data) => {
         const url = data && data.url ? String(data.url).trim() : "";
         if (!url) {
@@ -86,7 +93,7 @@ Page({
           wx.showToast({ title: "未选到图片", icon: "none" });
           return;
         }
-        this.setPickStatus("已选图，上传中…");
+        this.setPickStatus("已选图，准备压缩…");
         this.uploadTempImage(temp);
       },
       fail: (err) => {

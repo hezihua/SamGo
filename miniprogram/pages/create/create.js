@@ -68,9 +68,19 @@ Page({
   },
 
   onPullDownRefresh() {
-    this.loadProducts({ reset: true }).finally(() => {
-      wx.stopPullDownRefresh();
-    });
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+    this.loadProducts({ reset: true })
+      .then(() => {
+        if (!this.data.error) {
+          wx.showToast({ title: "商品列表已更新", icon: "none", duration: 1500 });
+        }
+      })
+      .finally(() => {
+        wx.stopPullDownRefresh();
+      });
   },
 
   onReachBottom() {
