@@ -48,10 +48,27 @@
   <view class="card mx">
     <view wx:if="{{productsLoading}}" class="muted center-pad">加载商品…</view>
     <view wx:elif="{{products.length == 0}}" class="muted center-pad">暂无商品，请先在 Web 后台添加</view>
-    <view wx:else class="product-grid">
+    <block wx:else>
+      <view class="product-search-wrap">
+        <input
+          class="product-search-input"
+          type="text"
+          placeholder="搜索商品名称"
+          value="{{productSearch}}"
+          bindinput="onProductSearchInput"
+          confirm-type="search"
+        />
+        <text
+          wx:if="{{productSearch}}"
+          class="product-search-clear"
+          bindtap="onClearProductSearch"
+        >清除</text>
+      </view>
+      <view wx:if="{{displayProducts.length == 0}}" class="muted center-pad product-search-empty">没有匹配的商品</view>
+      <view wx:else class="product-grid">
       <view
         class="grid-item {{item.selected ? 'selected' : ''}}"
-        wx:for="{{products}}"
+        wx:for="{{displayProducts}}"
         wx:key="id"
         data-id="{{item.id}}"
         bindtap="onToggleProduct"
@@ -67,7 +84,8 @@
         <text class="grid-price">¥{{item.price}}</text>
         <view class="grid-check">{{item.selected ? '✓' : ''}}</view>
       </view>
-    </view>
+      </view>
+    </block>
   </view>
 
   <view class="bottom-bar">

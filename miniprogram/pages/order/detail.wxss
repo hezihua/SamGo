@@ -561,6 +561,27 @@
   text-align: center;
 }
 
+.add-picker-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.add-picker-search-input {
+  flex: 1;
+  background: #f5f6f8;
+  border-radius: var(--radius-md);
+  padding: 18rpx 22rpx;
+  font-size: 28rpx;
+}
+
+.add-picker-search-clear {
+  flex-shrink: 0;
+  font-size: 26rpx;
+  color: var(--color-primary);
+}
+
 .add-picker-scroll {
   max-height: 52vh;
 }

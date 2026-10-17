@@ -54,6 +54,33 @@
   padding: 40rpx 0;
 }
 
+.product-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.product-search-input {
+  flex: 1;
+  background: #f5f6f8;
+  border-radius: var(--radius-md);
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+}
+
+.product-search-clear {
+  flex-shrink: 0;
+  font-size: 26rpx;
+  color: var(--color-primary);
+  padding: 8rpx 4rpx;
+}
+
+.product-search-empty {
+  padding-top: 16rpx;
+  padding-bottom: 24rpx;
+}
+
 .product-grid {
   display: flex;
   flex-wrap: wrap;

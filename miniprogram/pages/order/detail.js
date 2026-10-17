@@ -2,6 +2,7 @@ const { getSession } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
 const { rest } = require("../../utils/supabase");
 const { resolveOrderIdFromOptions } = require("../../utils/order-scene");
+const { filterProductsByName } = require("../../utils/product-search");
 
 const PENDING_ORDER_KEY = "samgo_pending_order_id";
 
@@ -129,6 +130,8 @@ Page({
     canManageSkus: false,
     addPickerVisible: false,
     addCatalog: [],
+    addCatalogDisplay: [],
+    addCatalogSearch: "",
     addCatalogLoading: false,
   },
 
@@ -284,6 +287,8 @@ Page({
       addPickerVisible: true,
       addCatalogLoading: true,
       addCatalog: [],
+      addCatalogDisplay: [],
+      addCatalogSearch: "",
     });
     try {
       const rows = await rest(
@@ -291,7 +296,8 @@ Page({
       );
       const inOrder = new Set((this.data.products || []).map((p) => p.id));
       const addCatalog = (rows || []).filter((p) => !inOrder.has(p.id));
-      this.setData({ addCatalog, addCatalogLoading: false });
+      const addCatalogDisplay = filterProductsByName(addCatalog, "");
+      this.setData({ addCatalog, addCatalogDisplay, addCatalogLoading: false });
     } catch (err) {
       this.setData({ addPickerVisible: false, addCatalogLoading: false });
       wx.showToast({ title: err.message || "\u52a0\u8f7d\u5931\u8d25", icon: "none" });
@@ -299,7 +305,21 @@ Page({
   },
 
   onCloseAddPicker() {
-    this.setData({ addPickerVisible: false });
+    this.setData({ addPickerVisible: false, addCatalogSearch: "" });
+  },
+
+  onAddCatalogSearchInput(e) {
+    const addCatalogSearch = e.detail.value || "";
+    const addCatalogDisplay = filterProductsByName(
+      this.data.addCatalog,
+      addCatalogSearch,
+    );
+    this.setData({ addCatalogSearch, addCatalogDisplay });
+  },
+
+  onClearAddCatalogSearch() {
+    const addCatalogDisplay = filterProductsByName(this.data.addCatalog, "");
+    this.setData({ addCatalogSearch: "", addCatalogDisplay });
   },
 
   async onPickAddProduct(e) {

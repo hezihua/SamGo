@@ -1,6 +1,7 @@
 const { getSession } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
 const { rest } = require("../../utils/supabase");
+const { filterProductsByName } = require("../../utils/product-search");
 
 function todayString() {
   const d = new Date();
@@ -18,6 +19,8 @@ Page({
     time: "18:00",
     today: "",
     products: [],
+    displayProducts: [],
+    productSearch: "",
     productsLoading: true,
     selectedCount: 0,
     loading: false,
@@ -41,7 +44,8 @@ Page({
         "products?select=id,name,price,category,image_url&order=name.asc",
       );
       const products = (rows || []).map((p) => ({ ...p, selected: false }));
-      this.setData({ products, productsLoading: false });
+      const displayProducts = filterProductsByName(products, this.data.productSearch);
+      this.setData({ products, displayProducts, productsLoading: false });
     } catch (err) {
       this.setData({
         productsLoading: false,
@@ -57,7 +61,19 @@ Page({
       p.id === id ? { ...p, selected: !p.selected } : p,
     );
     const selectedCount = products.filter((p) => p.selected).length;
-    this.setData({ products, selectedCount });
+    const displayProducts = filterProductsByName(products, this.data.productSearch);
+    this.setData({ products, displayProducts, selectedCount });
+  },
+
+  onProductSearchInput(e) {
+    const productSearch = e.detail.value || "";
+    const displayProducts = filterProductsByName(this.data.products, productSearch);
+    this.setData({ productSearch, displayProducts });
+  },
+
+  onClearProductSearch() {
+    const displayProducts = filterProductsByName(this.data.products, "");
+    this.setData({ productSearch: "", displayProducts });
   },
 
   onTitleInput(e) {

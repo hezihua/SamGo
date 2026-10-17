@@ -183,11 +183,28 @@
       <text class="wxacode-title">添加本单商品</text>
       <text class="add-picker-hint muted">从已上架商品中选择</text>
       <view wx:if="{{addCatalogLoading}}" class="wxacode-loading muted">加载中…</view>
-      <scroll-view wx:else scroll-y class="add-picker-scroll">
+      <block wx:else>
+        <view class="add-picker-search-wrap">
+          <input
+            class="add-picker-search-input"
+            type="text"
+            placeholder="搜索商品名称"
+            value="{{addCatalogSearch}}"
+            bindinput="onAddCatalogSearchInput"
+            confirm-type="search"
+          />
+          <text
+            wx:if="{{addCatalogSearch}}"
+            class="add-picker-search-clear"
+            bindtap="onClearAddCatalogSearch"
+          >清除</text>
+        </view>
+      <scroll-view scroll-y class="add-picker-scroll">
         <view wx:if="{{addCatalog.length === 0}}" class="empty-inline">没有可添加的商品</view>
+        <view wx:elif="{{addCatalogDisplay.length === 0}}" class="empty-inline">没有匹配的商品</view>
         <view
           class="add-picker-row"
-          wx:for="{{addCatalog}}"
+          wx:for="{{addCatalogDisplay}}"
           wx:key="id"
           data-id="{{item.id}}"
           bindtap="onPickAddProduct"
@@ -201,6 +218,7 @@
           <text class="add-picker-add">添加</text>
         </view>
       </scroll-view>
+      </block>
       <text class="wxacode-close" bindtap="onCloseAddPicker">关闭</text>
     </view>
   </view>
