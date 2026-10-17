@@ -27,9 +27,18 @@ export function RecognizePosterButton({
         `/api/admin/submissions/${productId}/recognize-poster`,
         { method: "POST" },
       );
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+        duplicate_hints?: { name: string; price: number; reason: string }[];
+      };
       if (!res.ok) {
         throw new Error(data.error || "识图失败");
+      }
+      if (data.duplicate_hints?.length) {
+        const lines = data.duplicate_hints
+          .map((h) => `· ${h.name} ¥${h.price}（${h.reason}）`)
+          .join("\n");
+        window.alert(`识图完成。注意可能重复：\n${lines}`);
       }
       router.refresh();
     } catch (e) {

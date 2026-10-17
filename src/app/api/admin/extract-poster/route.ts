@@ -1,7 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { isAdminSession } from "@/lib/admin-auth";
-import { isOssConfigured, uploadProductImage } from "@/lib/aliyun-oss";
+import { findSimilarProducts } from "@/lib/product-duplicate-hint";
+import {
+  isOssConfigured,
+  uploadProductImage,
+  uploadSubmissionPosterImage,
+} from "@/lib/aliyun-oss";
 import { cropPosterProductImage } from "@/lib/poster-product-crop";
 import {
   extractPosterFromImage,
@@ -43,6 +48,7 @@ export async function POST(request: Request) {
     const contentType = file.type || "application/octet-stream";
     const { product, crop } = await extractPosterFromImage(buffer, contentType);
 
+    let poster_url: string | null = null;
     if (isOssConfigured()) {
       if (uploadFullPoster) {
         product.image_url = await uploadProductImage(
@@ -50,7 +56,13 @@ export async function POST(request: Request) {
           contentType,
           file.name || "poster.jpg",
         );
+        poster_url = product.image_url;
       } else {
+        poster_url = await uploadSubmissionPosterImage(
+          buffer,
+          contentType,
+          file.name || "poster.jpg",
+        );
         const cropped = await cropPosterProductImage(buffer, crop);
         if (cropped) {
           product.image_url = await uploadProductImage(
@@ -65,15 +77,21 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
+    const duplicate_hints = await findSimilarProducts(admin, {
+      name: product.name,
+      price: product.price,
+    });
+
     const { data: saved, error: dbError } = await admin
       .from("products")
       .insert({
         ...product,
+        poster_url,
         search_aliases: product.search_aliases ?? suggestSearchAliases(product.name),
         review_status: "approved",
       })
       .select(
-        "id, name, price, category, unit, image_url, description, search_aliases",
+        "id, name, price, category, unit, image_url, poster_url, description, search_aliases",
       )
       .single();
 
@@ -84,7 +102,7 @@ export async function POST(request: Request) {
 
     revalidatePath("/admin/products");
 
-    return NextResponse.json({ product: saved, saved: true });
+    return NextResponse.json({ product: saved, saved: true, duplicate_hints });
   } catch (err) {
     const message = err instanceof Error ? err.message : "识别失败";
     console.error("[extract-poster]", message);

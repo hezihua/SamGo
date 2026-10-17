@@ -7,6 +7,7 @@ import {
   isPosterSubmissionPlaceholder,
   parseProductFormData,
 } from "@/lib/product-fields";
+import { findSimilarProducts } from "@/lib/product-duplicate-hint";
 import { suggestSearchAliases } from "@/lib/search-aliases";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ParsedProductFields } from "@/lib/product-fields";
@@ -77,9 +78,11 @@ export async function approveProduct(formData: FormData) {
   }
 
   const admin = createAdminClient();
+  const force = String(formData.get("force_approve") ?? "") === "1";
+
   const { data: row, error: fetchError } = await admin
     .from("products")
-    .select("name")
+    .select("name, price")
     .eq("id", id)
     .maybeSingle();
 
@@ -89,6 +92,22 @@ export async function approveProduct(formData: FormData) {
 
   if (isPosterSubmissionPlaceholder(row)) {
     redirect("/admin/products?error=need-recognize");
+  }
+
+  if (!force) {
+    const hints = await findSimilarProducts(
+      admin,
+      {
+        name: String(row.name ?? ""),
+        price: Number(row.price),
+        excludeId: id,
+      },
+      { limit: 1 },
+    );
+    if (hints.length > 0) {
+      const match = encodeURIComponent(hints[0].name);
+      redirect(`/admin/products?error=duplicate&match=${match}`);
+    }
   }
 
   const { error } = await admin

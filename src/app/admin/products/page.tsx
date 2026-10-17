@@ -9,13 +9,13 @@ export const dynamic = "force-dynamic";
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; match?: string }>;
 }) {
   if (!(await isAdminSession())) {
     redirect("/admin/login");
   }
 
-  const { error } = await searchParams;
+  const { error, match } = await searchParams;
 
   let rows: ProductRow[] = [];
   let fetchError: { message: string } | null = null;
@@ -25,7 +25,7 @@ export default async function AdminProductsPage({
     const { data: products, error: dbError } = await admin
       .from("products")
       .select(
-        "id, name, price, category, unit, image_url, description, search_aliases, review_status, review_note, created_at, created_by, profiles(nickname)"
+        "id, name, price, category, unit, image_url, poster_url, description, search_aliases, review_status, review_note, created_at, created_by, profiles(nickname)"
       )
       .order("review_status", { ascending: true })
       .order("created_at", { ascending: false });
@@ -78,6 +78,12 @@ export default async function AdminProductsPage({
       ) : null}
       {error === "need-recognize" ? (
         <p style={styles.error}>请先对山姆海报点击「识图填字段」，再审核通过</p>
+      ) : null}
+      {error === "duplicate" ? (
+        <p style={styles.error}>
+          审核未通过：库中可能有相似商品
+          {match ? `（如「${decodeURIComponent(match)}」）` : ""}。请核对后点「通过」并在确认框继续，或编辑/驳回。
+        </p>
       ) : null}
       {fetchError ? (
         <p style={styles.error}>加载商品失败：{fetchError.message}</p>

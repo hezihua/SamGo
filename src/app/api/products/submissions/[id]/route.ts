@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { resolveProductSubmitPayload } from "@/lib/product-fields";
+import {
+  isPosterSubmissionPlaceholder,
+  resolveProductSubmitPayload,
+} from "@/lib/product-fields";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { userFromBearer } from "@/lib/request-user";
 
@@ -51,10 +54,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    const posterOnly = isPosterSubmissionPlaceholder(fields);
     const { data, error } = await admin
       .from("products")
       .update({
         ...fields,
+        ...(posterOnly && fields.image_url
+          ? { poster_url: fields.image_url }
+          : null),
         review_status: "pending",
         review_note: null,
       })

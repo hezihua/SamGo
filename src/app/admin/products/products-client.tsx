@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  approveProduct,
   createProduct,
   deleteProduct,
   rejectProduct,
   updateProduct,
 } from "./actions";
+import { ApproveProductForm } from "./approve-product-form";
+import { BatchRecognizePending } from "./batch-recognize-pending";
 import { ImageUploadField } from "./image-upload-field";
 import { isPosterSubmissionPlaceholder } from "@/lib/product-fields";
 import { RecognizePosterButton } from "./pending-poster-actions";
@@ -22,6 +23,7 @@ export type ProductRow = {
   image_url: string | null;
   description: string | null;
   search_aliases?: string | null;
+  poster_url?: string | null;
   review_status: "approved" | "pending" | "rejected";
   review_note?: string | null;
   created_at?: string;
@@ -138,23 +140,37 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
           ) : null}
           {pending.length > 0 ? (
             <>
-              <h3 style={styles.sectionTitle}>待审核（{pending.length}）</h3>
+              <div style={styles.pendingToolbar}>
+                <h3 style={styles.sectionTitleInline}>待审核（{pending.length}）</h3>
+                <BatchRecognizePending
+                  productIds={pending
+                    .filter((p) => isPosterSubmissionPlaceholder(p))
+                    .map((p) => p.id)}
+                  buttonStyle={styles.secondaryButton}
+                  statusStyle={styles.batchStatus}
+                />
+              </div>
               <ul style={styles.list}>
                 {pending.map((product) => {
                   const posterPending = isPosterSubmissionPlaceholder(product);
+                  const posterPreview =
+                    product.poster_url?.trim() ||
+                    product.image_url?.trim() ||
+                    "";
                   return (
                   <li key={product.id} style={styles.rowPending}>
                     <div style={styles.pendingTop}>
-                      {product.image_url ? (
+                      {posterPreview ? (
                         <a
-                          href={product.image_url}
+                          href={posterPreview}
                           target="_blank"
                           rel="noreferrer"
                           style={styles.posterLink}
+                          title="查看分享海报"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={product.image_url}
+                            src={posterPreview}
                             alt=""
                             style={styles.posterThumb}
                           />
@@ -175,6 +191,16 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
                         <span style={styles.submitter}>
                           提交人：{product.profiles?.nickname?.trim() || "微信用户"}
                         </span>
+                        {product.poster_url && product.image_url && product.poster_url !== product.image_url ? (
+                          <a
+                            href={product.poster_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={styles.posterUrlLink}
+                          >
+                            原分享海报
+                          </a>
+                        ) : null}
                       </div>
                     </div>
                     <div style={styles.reviewActions}>
@@ -185,12 +211,10 @@ export function ProductsAdmin({ products }: ProductsAdminProps) {
                           errorStyle={styles.recognizeError}
                         />
                       ) : (
-                        <form action={approveProduct}>
-                          <input type="hidden" name="id" value={product.id} />
-                          <button type="submit" style={styles.primaryButton}>
-                            通过
-                          </button>
-                        </form>
+                        <ApproveProductForm
+                          productId={product.id}
+                          buttonStyle={styles.primaryButton}
+                        />
                       )}
                       <form action={rejectProduct} style={styles.rejectForm}>
                         <input type="hidden" name="id" value={product.id} />
@@ -382,6 +406,14 @@ function ProductForm(props: ProductFormProps) {
             style={styles.input}
           />
         </label>
+        {product?.poster_url ? (
+          <p style={styles.posterUrlReadonly}>
+            分享海报：
+            <a href={product.poster_url} target="_blank" rel="noreferrer">
+              打开原图
+            </a>
+          </p>
+        ) : null}
         <div style={styles.formActions}>
           {onDelete && product ? (
             <button
@@ -543,6 +575,34 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: "#b91c1c",
     maxWidth: 220,
+  },
+  pendingToolbar: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+  sectionTitleInline: {
+    margin: 0,
+    fontSize: 16,
+    fontWeight: 600,
+  },
+  batchStatus: {
+    fontSize: 12,
+    color: "#64748b",
+    maxWidth: 360,
+    whiteSpace: "pre-line",
+  },
+  posterUrlLink: {
+    width: "100%",
+    fontSize: 12,
+    color: "#0369a1",
+  },
+  posterUrlReadonly: {
+    margin: "0 0 12px",
+    fontSize: 13,
+    color: "#64748b",
   },
   rowMuted: {
     display: "flex",

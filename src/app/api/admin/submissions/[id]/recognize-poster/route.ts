@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { isAdminSession } from "@/lib/admin-auth";
+import { findSimilarProducts } from "@/lib/product-duplicate-hint";
 import { isOssConfigured, uploadProductImage } from "@/lib/aliyun-oss";
 import { cropPosterProductImage } from "@/lib/poster-product-crop";
 import { isPosterSubmissionPlaceholder } from "@/lib/product-fields";
@@ -53,7 +54,7 @@ export async function POST(_request: Request, context: RouteContext) {
     const admin = createAdminClient();
     const { data: existing, error: fetchError } = await admin
       .from("products")
-      .select("id, name, review_status, image_url")
+      .select("id, name, review_status, image_url, poster_url, price")
       .eq("id", id)
       .maybeSingle();
 
@@ -68,11 +69,19 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
-    if (!existing.image_url?.trim()) {
+    const posterFetchUrl =
+      existing.poster_url?.trim() || existing.image_url?.trim() || "";
+    if (!posterFetchUrl) {
       return NextResponse.json({ error: "缺少海报图片地址" }, { status: 400 });
     }
 
-    const { buffer, contentType } = await fetchPosterBuffer(existing.image_url);
+    const poster_url =
+      existing.poster_url?.trim() ||
+      (existing.image_url?.includes("product-submissions")
+        ? existing.image_url.trim()
+        : null);
+
+    const { buffer, contentType } = await fetchPosterBuffer(posterFetchUrl);
     const { product, crop } = await extractPosterFromImage(buffer, contentType);
 
     let image_url = product.image_url;
@@ -87,6 +96,12 @@ export async function POST(_request: Request, context: RouteContext) {
       }
     }
 
+    const duplicate_hints = await findSimilarProducts(
+      admin,
+      { name: product.name, price: product.price, excludeId: id },
+      { limit: 3 },
+    );
+
     const { data: saved, error: updateError } = await admin
       .from("products")
       .update({
@@ -96,12 +111,13 @@ export async function POST(_request: Request, context: RouteContext) {
         unit: product.unit,
         description: product.description,
         image_url,
+        poster_url: poster_url || posterFetchUrl,
         search_aliases:
           product.search_aliases ?? suggestSearchAliases(product.name),
       })
       .eq("id", id)
       .select(
-        "id, name, price, category, unit, image_url, description, review_status",
+        "id, name, price, category, unit, image_url, poster_url, description, review_status",
       )
       .single();
 
@@ -115,6 +131,7 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({
       product: saved,
       wasPlaceholder: isPosterSubmissionPlaceholder(existing),
+      duplicate_hints,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "识图失败";

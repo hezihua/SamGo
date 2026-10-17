@@ -106,6 +106,7 @@ export function PosterImportPanel({ onSaved }: PosterImportPanelProps) {
         product?: { name?: string };
         saved?: boolean;
         error?: string;
+        duplicate_hints?: { name: string; price: number; reason: string }[];
       };
 
       if (!res.ok) {
@@ -115,6 +116,12 @@ export function PosterImportPanel({ onSaved }: PosterImportPanelProps) {
         throw new Error("入库失败");
       }
 
+      if (data.duplicate_hints?.length) {
+        const lines = data.duplicate_hints
+          .map((h) => `· ${h.name} ¥${h.price}（${h.reason}）`)
+          .join("\n");
+        window.alert(`已入库「${data.product.name}」。注意可能重复：\n${lines}`);
+      }
       onSaved(data.product.name);
       setOpen(false);
       reset();

@@ -22,11 +22,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const posterOnly = isPosterSubmissionPlaceholder(fields);
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("products")
       .insert({
         ...fields,
+        poster_url: posterOnly ? fields.image_url : null,
         review_status: "pending",
         created_by: user.id,
       })
@@ -41,7 +43,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const posterOnly = isPosterSubmissionPlaceholder(fields);
     return NextResponse.json({
       product: data,
       message: posterOnly
