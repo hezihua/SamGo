@@ -13,6 +13,7 @@
         value="{{title}}"
         bindinput="onTitleInput"
       />
+      <text class="field-error" wx:if="{{titleError}}">{{titleError}}</text>
     </view>
     <view class="form-item">
       <text class="form-label">取货地址</text>
@@ -22,6 +23,7 @@
         value="{{deliveryAddress}}"
         bindinput="onAddressInput"
       />
+      <text class="field-error" wx:if="{{addressError}}">{{addressError}}</text>
     </view>
     <view class="form-row">
       <view class="form-item half">
@@ -29,6 +31,7 @@
         <picker mode="date" value="{{date}}" start="{{today}}" bindchange="onDateChange">
           <view class="form-picker">{{date || '选择日期'}}</view>
         </picker>
+        <text class="field-error" wx:if="{{dateError}}">{{dateError}}</text>
       </view>
       <view class="form-item half">
         <text class="form-label">截止时间</text>
@@ -46,7 +49,9 @@
   </view>
 
   <view class="card mx">
+    <text class="field-error field-error-block" wx:if="{{productError}}">{{productError}}</text>
     <view wx:if="{{productsLoading}}" class="muted center-pad">加载商品…</view>
+    <view wx:elif="{{catalogError}}" class="error-text center-pad">{{catalogError}}</view>
     <view wx:elif="{{catalogTotal == 0 && !productSearch && !categoryFilter}}" class="muted center-pad">暂无商品，请先在 Web 后台添加</view>
     <block wx:else>
       <scroll-view scroll-x class="category-scroll" enable-flex show-scrollbar="{{false}}">
@@ -108,6 +113,7 @@
   </view>
 
   <view class="bottom-bar">
+    <text class="submit-error" wx:if="{{submitError}}">{{submitError}}</text>
     <view
       class="btn-primary bottom-bar-btn {{loading ? 'is-disabled' : ''}}"
       bindtap="onSubmit"
@@ -115,5 +121,4 @@
       {{loading ? '发布中…' : '发布拼单'}}
     </view>
   </view>
-  <text class="error mx" wx:if="{{error}}">{{error}}</text>
 </view>

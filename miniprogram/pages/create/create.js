@@ -46,7 +46,12 @@ Page({
     selectedIds: {},
     selectedCount: 0,
     loading: false,
-    error: "",
+    titleError: "",
+    addressError: "",
+    dateError: "",
+    productError: "",
+    catalogError: "",
+    submitError: "",
   },
 
   onLoad() {
@@ -74,7 +79,7 @@ Page({
     }
     this.loadProducts({ reset: true })
       .then(() => {
-        if (!this.data.error) {
+        if (!this.data.catalogError) {
           wx.showToast({ title: "商品列表已更新", icon: "none", duration: 1500 });
         }
       })
@@ -96,7 +101,7 @@ Page({
     if (append && !this.data.hasMore) return;
 
     if (reset) {
-      this.setData({ productsLoading: true, error: "", catalogOffset: 0 });
+      this.setData({ productsLoading: true, catalogError: "", catalogOffset: 0 });
     } else {
       this.setData({ catalogLoadingMore: true });
     }
@@ -137,7 +142,7 @@ Page({
       this.setData({
         productsLoading: false,
         catalogLoadingMore: false,
-        error: err.message || "加载商品失败",
+        catalogError: err.message || "加载商品失败",
       });
     }
   },
@@ -154,10 +159,12 @@ Page({
     const displayProducts = this.data.displayProducts.map((p) =>
       p.id === id ? { ...p, selected: Boolean(selectedIds[id]) } : p,
     );
+    const selectedCount = countSelected(selectedIds);
     this.setData({
       selectedIds,
       displayProducts,
-      selectedCount: countSelected(selectedIds),
+      selectedCount,
+      productError: selectedCount > 0 ? "" : this.data.productError,
     });
   },
 
@@ -194,15 +201,15 @@ Page({
   },
 
   onTitleInput(e) {
-    this.setData({ title: e.detail.value });
+    this.setData({ title: e.detail.value, titleError: "" });
   },
 
   onAddressInput(e) {
-    this.setData({ deliveryAddress: e.detail.value });
+    this.setData({ deliveryAddress: e.detail.value, addressError: "" });
   },
 
   onDateChange(e) {
-    this.setData({ date: e.detail.value });
+    this.setData({ date: e.detail.value, dateError: "" });
   },
 
   onTimeChange(e) {
@@ -215,16 +222,23 @@ Page({
 
     const trimmedTitle = (title || "").trim();
     const trimmedAddress = (deliveryAddress || "").trim();
+    const cleared = {
+      titleError: "",
+      addressError: "",
+      dateError: "",
+      productError: "",
+      submitError: "",
+    };
     if (!trimmedTitle) {
-      this.setData({ error: "请输入拼单标题" });
+      this.setData({ ...cleared, titleError: "请输入拼单标题" });
       return;
     }
     if (!trimmedAddress) {
-      this.setData({ error: "请输入取货地址" });
+      this.setData({ ...cleared, addressError: "请输入取货地址" });
       return;
     }
     if (!date) {
-      this.setData({ error: "请选择截止日期" });
+      this.setData({ ...cleared, dateError: "请选择截止日期" });
       return;
     }
 
@@ -232,7 +246,7 @@ Page({
       (id) => this.data.selectedIds[id],
     );
     if (product_ids.length === 0) {
-      this.setData({ error: "请至少选择一个商品" });
+      this.setData({ ...cleared, productError: "请至少选择一个商品" });
       return;
     }
 
@@ -244,7 +258,7 @@ Page({
 
     const deadline = `${date}T${time}:00+08:00`;
 
-    this.setData({ loading: true, error: "" });
+    this.setData({ loading: true, ...cleared });
 
     requestWithAuth("/api/group-orders", "POST", {
       title: trimmedTitle,
@@ -267,7 +281,7 @@ Page({
       })
       .catch((err) => {
         this.setData({
-          error: err.message || "发布失败",
+          submitError: err.message || "发布失败",
           loading: false,
         });
       });
