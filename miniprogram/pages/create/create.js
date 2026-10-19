@@ -1,4 +1,4 @@
-const { getSession } = require("../../utils/auth");
+const { getSession, loginPageUrl } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
 const {
   CATALOG_DEFAULT_LIMIT,
@@ -52,7 +52,7 @@ Page({
   onLoad() {
     const session = getSession();
     if (!session?.access_token) {
-      wx.redirectTo({ url: "/pages/home/home" });
+      wx.redirectTo({ url: loginPageUrl("/pages/create/create") });
       return;
     }
     this._searchDebounceTimer = null;
@@ -238,7 +238,7 @@ Page({
 
     const session = getSession();
     if (!session?.user?.id) {
-      wx.redirectTo({ url: "/pages/home/home" });
+      wx.redirectTo({ url: loginPageUrl("/pages/create/create") });
       return;
     }
 

@@ -1,0 +1,19 @@
+<view class="page-login">
+  <view class="login-head mx">
+    <text class="login-title">登录后继续使用</text>
+    <text class="login-hint">登录后可发起拼单、上传商品；不会收集手机号。</text>
+  </view>
+  <view class="card mx login-card">
+    <text class="login-field-hint">请填写便于识别的称呼或楼栋房号，发起人核对加购、配送时更方便。</text>
+    <input
+      class="login-input"
+      placeholder="如：小李 · 3栋502（可选）"
+      value="{{nickname}}"
+      bindinput="onNicknameInput"
+    />
+    <button class="btn-primary login-btn" loading="{{loading}}" bindtap="onWechatLogin">
+      微信一键登录
+    </button>
+    <text class="login-error" wx:if="{{error}}">{{error}}</text>
+  </view>
+</view>

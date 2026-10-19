@@ -1,4 +1,4 @@
-const { loginWithWechat, clearSession, ensureValidSession } = require("../../utils/auth");
+const { clearSession, ensureValidSession, getSession } = require("../../utils/auth");
 
 const NICKNAME_PREF_KEY = "samgo_nickname_pref";
 
@@ -21,28 +21,33 @@ Page({
   data: {
     loggedIn: false,
     user: null,
-    userInitial: "\u62fc",
-    nickname: loadNicknamePref(),
-    loading: false,
-    error: "",
+    userInitial: "拼",
   },
+
   onShow() {
     this.refreshSession();
   },
+
   async refreshSession() {
+    const session = getSession();
+    if (!session?.access_token) {
+      this.setData({ loggedIn: false, user: null });
+      return;
+    }
     try {
-      const session = await ensureValidSession();
-      const n = (session.user && session.user.nickname) || "\u62fc";
-      this.setData({ loggedIn: true, user: session.user, userInitial: n.trim().charAt(0) || "\u62fc", error: "" });
+      const valid = await ensureValidSession();
+      const n = (valid.user && valid.user.nickname) || "拼";
+      this.setData({
+        loggedIn: true,
+        user: valid.user,
+        userInitial: n.trim().charAt(0) || "拼",
+      });
       this.openPendingOrder();
     } catch (_e) {
-      this.setData({
-        loggedIn: false,
-        user: null,
-        nickname: loadNicknamePref(),
-      });
+      this.setData({ loggedIn: false, user: null });
     }
   },
+
   openPendingOrder() {
     try {
       const pending = wx.getStorageSync("samgo_pending_order_id") || "";
@@ -52,34 +57,22 @@ Page({
       }
     } catch (_e) {}
   },
-  onNicknameInput(e) {
-    const nickname = e.detail.value;
-    this.setData({ nickname });
-    saveNicknamePref(nickname);
+
+  onGoOrders() {
+    wx.navigateTo({ url: "/pages/index/index" });
   },
-  async onWechatLogin() {
-    this.setData({ loading: true, error: "" });
-    const nick = (this.data.nickname || "").trim();
-    try {
-      await loginWithWechat(nick);
-      saveNicknamePref(nick);
-      await this.refreshSession();
-      this.setData({ loading: false });
-    } catch (err) {
-      this.setData({ error: err.message || "\u767b\u5f55\u5931\u8d25", loading: false });
-    }
+
+  onGoProducts() {
+    wx.navigateTo({ url: "/pages/product-submit/product-submit" });
   },
-  onGoOrders() { wx.navigateTo({ url: "/pages/index/index" }); },
-  onGoProducts() { wx.navigateTo({ url: "/pages/product-submit/product-submit" }); },
+
   onLogout() {
-    const nick =
-      (this.data.user && this.data.user.nickname) || this.data.nickname;
+    const nick = (this.data.user && this.data.user.nickname) || "";
     saveNicknamePref(nick);
     clearSession();
     this.setData({
       loggedIn: false,
       user: null,
-      nickname: loadNicknamePref(),
     });
   },
 });

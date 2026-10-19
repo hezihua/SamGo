@@ -1,9 +1,20 @@
 const {
   clearSession,
   ensureValidSession,
+  getSession,
   isAuthErrorMessage,
+  loginPageUrl,
 } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
+
+function decorateOrders(rows) {
+  return (rows || []).map((o) => ({
+    ...o,
+    statusLabel: orderStatusLabel(o.status),
+    isOpen: isOrderOpen(o.status),
+    deadlineShort: formatDeadlineShort(o.deadline),
+  }));
+}
 
 function orderStatusLabel(status) {
   if (status === "open" || status === "closing") return "\u8fdb\u884c\u4e2d";
@@ -34,17 +45,27 @@ Page({
   },
 
   async onShow() {
+    const session = getSession();
+    if (!session?.access_token) {
+      this.setData({ user: null, orders: [], loading: false, error: "" });
+      return;
+    }
     try {
-      const session = await ensureValidSession();
-      this.setData({ user: session.user });
+      const valid = await ensureValidSession();
+      this.setData({ user: valid.user });
       this.loadOrders();
     } catch (_err) {
       clearSession();
-      wx.redirectTo({ url: "/pages/home/home" });
+      this.setData({ user: null, orders: [], loading: false, error: "" });
     }
   },
 
   async loadOrders() {
+    const session = getSession();
+    if (!session?.access_token) {
+      this.setData({ orders: [], loading: false, error: "" });
+      return;
+    }
     this.setData({ loading: true, error: "" });
     try {
       await requestWithAuth("/api/group-orders/close-expired", "POST").catch(
@@ -55,17 +76,17 @@ Page({
         `/api/group-orders/mine?scope=${scope}`,
         "GET",
       );
-      const orders = (data.orders || []).map((o) => ({
-          ...o,
-          statusLabel: orderStatusLabel(o.status),
-          isOpen: isOrderOpen(o.status),
-          deadlineShort: formatDeadlineShort(o.deadline),
-        }));
+      const orders = decorateOrders(data.orders || []);
       this.setData({ orders, loading: false });
     } catch (err) {
       if (isAuthErrorMessage(err.message)) {
         clearSession();
-        wx.redirectTo({ url: "/pages/home/home" });
+        this.setData({
+          user: null,
+          orders: [],
+          error: "",
+          loading: false,
+        });
         return;
       }
       this.setData({
@@ -82,6 +103,11 @@ Page({
   },
 
   onCreate() {
+    const session = getSession();
+    if (!session?.access_token) {
+      wx.navigateTo({ url: loginPageUrl("/pages/create/create") });
+      return;
+    }
     wx.navigateTo({ url: "/pages/create/create" });
   },
 

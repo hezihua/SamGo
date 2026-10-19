@@ -1,4 +1,4 @@
-const { getSession } = require("../../utils/auth");
+const { getSession, loginPageUrl } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
 const { rest } = require("../../utils/supabase");
 const { resolveOrderIdFromOptions } = require("../../utils/order-scene");
@@ -146,7 +146,9 @@ Page({
       try {
         wx.setStorageSync(PENDING_ORDER_KEY, orderId);
       } catch (_e) {}
-      wx.redirectTo({ url: "/pages/home/home" });
+      wx.redirectTo({
+        url: loginPageUrl(`/pages/order/detail?id=${orderId}`),
+      });
       return;
     }
     this._userId = session.user && session.user.id;

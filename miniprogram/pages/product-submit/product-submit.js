@@ -1,4 +1,9 @@
-const { ensureValidSession, clearSession } = require("../../utils/auth");
+const {
+  ensureValidSession,
+  clearSession,
+  getSession,
+  loginPageUrl,
+} = require("../../utils/auth");
 const { requestWithAuth, uploadWithAuth } = require("../../utils/api");
 const { getApiBase } = require("../../utils/get-api-base");
 const { compressImageForUpload } = require("../../utils/compress-image");
@@ -20,12 +25,37 @@ Page({
   },
 
   async onShow() {
+    const session = getSession();
+    if (!session?.access_token) {
+      this.setData({ pendingList: [], rejectedList: [] });
+      return;
+    }
     try {
       await ensureValidSession();
       this.loadSubmissions();
     } catch (_e) {
       clearSession();
-      wx.redirectTo({ url: "/pages/home/home" });
+      this.setData({ pendingList: [], rejectedList: [] });
+    }
+  },
+
+  async ensureLoggedIn() {
+    const session = getSession();
+    if (!session?.access_token) {
+      wx.navigateTo({
+        url: loginPageUrl("/pages/product-submit/product-submit"),
+      });
+      return false;
+    }
+    try {
+      await ensureValidSession();
+      return true;
+    } catch (_e) {
+      clearSession();
+      wx.navigateTo({
+        url: loginPageUrl("/pages/product-submit/product-submit"),
+      });
+      return false;
     }
   },
 
@@ -165,7 +195,8 @@ Page({
     });
   },
 
-  onChooseImage() {
+  async onChooseImage() {
+    if (!(await this.ensureLoggedIn())) return;
     let env = "";
     try {
       env = wx.getAccountInfoSync().miniProgram.envVersion || "";
@@ -176,7 +207,8 @@ Page({
     this.ensurePrivacyThenPick();
   },
 
-  onEditRejected(e) {
+  async onEditRejected(e) {
+    if (!(await this.ensureLoggedIn())) return;
     const id = e.currentTarget.dataset.id;
     const item = (this.data.rejectedList || []).find((r) => r.id === id);
     if (!item) return;
@@ -197,6 +229,7 @@ Page({
 
   async onSubmit() {
     if (this.data.submitting) return;
+    if (!(await this.ensureLoggedIn())) return;
     const img = (this.data.imageUrl || "").trim();
     if (!img) {
       wx.showToast({ title: "请上传山姆分享海报", icon: "none" });

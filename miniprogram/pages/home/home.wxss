@@ -1,5 +1,5 @@
 .page-home {
-  min-height: 100vh;
+  box-sizing: border-box;
   padding-bottom: 48rpx;
 }
 
@@ -64,8 +64,26 @@
   padding: 8rpx 0 8rpx 16rpx;
 }
 
-.menu {
+.intro {
   margin-top: 32rpx;
+  padding: 24rpx 28rpx;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.intro-text {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.menu {
+  margin-top: 24rpx;
+}
+
+.menu-item:last-child {
+  margin-bottom: 0;
 }
 
 .menu-item {

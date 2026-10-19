@@ -178,6 +178,19 @@ function loginWithWechat(nickname) {
   });
 }
 
+function sanitizeLoginRedirect(raw) {
+  const decoded = decodeURIComponent(String(raw || "")).trim();
+  if (decoded.startsWith("/pages/") && !decoded.includes("://")) {
+    return decoded;
+  }
+  return "/pages/home/home";
+}
+
+function loginPageUrl(redirectPath) {
+  const safe = sanitizeLoginRedirect(redirectPath);
+  return `/pages/login/login?redirect=${encodeURIComponent(safe)}`;
+}
+
 module.exports = {
   getSession,
   setSession,
@@ -186,4 +199,6 @@ module.exports = {
   ensureValidSession,
   refreshSessionWithToken,
   isAuthErrorMessage,
+  sanitizeLoginRedirect,
+  loginPageUrl,
 };

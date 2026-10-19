@@ -1,0 +1,41 @@
+@import "../home/home.wxss";
+
+.page-login {
+  box-sizing: border-box;
+  padding-bottom: 48rpx;
+}
+
+.login-head {
+  margin-top: 32rpx;
+  margin-bottom: 8rpx;
+}
+
+.login-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.login-hint {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.login-field-hint {
+  display: block;
+  width: 100%;
+  margin-bottom: 20rpx;
+  font-size: 24rpx;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  text-align: left;
+}
+
+.login-card {
+  align-items: stretch;
+}
+
