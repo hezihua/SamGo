@@ -52,7 +52,14 @@ export function RecognizePosterButton({
       }
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "识图失败");
+      const msg = e instanceof Error ? e.message : "识图失败";
+      if (/fetch failed|failed to fetch|networkerror|load failed/i.test(msg)) {
+        setError(
+          "连接中断或超时（识图约需 15–60 秒）。请稍后再点；若反复出现，请在 Vercel 确认函数 maxDuration≥60（Hobby 上限较低）。",
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }

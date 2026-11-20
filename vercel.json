@@ -1,4 +1,12 @@
 {
+  "functions": {
+    "app/api/admin/submissions/[id]/recognize-poster/route.js": {
+      "maxDuration": 60
+    },
+    "app/api/admin/extract-poster/route.js": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/close-expired-orders",

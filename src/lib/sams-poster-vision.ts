@@ -200,9 +200,15 @@ export function isPosterVisionConfigured(): boolean {
   return visionConfig() !== null;
 }
 
+export type ExtractPosterOptions = {
+  /** 待审核单条识图：只跑一个模型一次，控制在 serverless 时限内 */
+  quick?: boolean;
+};
+
 export async function extractPosterFromImage(
   buffer: Buffer,
   _contentType: string,
+  options?: ExtractPosterOptions,
 ): Promise<PosterExtractResult> {
   const cfg = visionConfig();
   if (!cfg) {
@@ -221,11 +227,13 @@ export async function extractPosterFromImage(
   const models = cfg.baseUrl.includes("openrouter.ai")
     ? visionModelCandidates(cfg)
     : [cfg.model];
+  const modelList = options?.quick ? models.slice(0, 1) : models;
+  const attemptLimit = options?.quick ? 1 : 2;
 
   let lastError = "识别失败";
 
-  for (const model of models) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+  for (const model of modelList) {
+    for (let attempt = 0; attempt < attemptLimit; attempt++) {
       const result = await callVisionChat(cfg, model, dataUrl);
       if (result.ok) {
         return parseVisionText(result.text, {

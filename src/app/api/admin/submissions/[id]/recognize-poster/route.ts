@@ -20,9 +20,21 @@ type RouteContext = { params: Promise<{ id: string }> };
 async function fetchPosterBuffer(
   url: string,
 ): Promise<{ buffer: Buffer; contentType: string }> {
-  const res = await fetch(url, { cache: "no-store" });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(25_000),
+    });
+  } catch (err) {
+    const hint =
+      err instanceof Error && /fetch failed|timeout|aborted/i.test(err.message)
+        ? "（从 OSS 拉海报超时，请确认图片 URL 可公网访问）"
+        : "";
+    throw new Error(`无法下载用户提交的海报${hint}`);
+  }
   if (!res.ok) {
-    throw new Error("无法下载用户提交的海报");
+    throw new Error(`无法下载用户提交的海报（HTTP ${res.status}）`);
   }
   const buffer = Buffer.from(await res.arrayBuffer());
   if (buffer.length > 5 * 1024 * 1024) {
@@ -85,7 +97,9 @@ export async function POST(_request: Request, context: RouteContext) {
         : null);
 
     const { buffer, contentType } = await fetchPosterBuffer(posterFetchUrl);
-    const { product, crop } = await extractPosterFromImage(buffer, contentType);
+    const { product, crop } = await extractPosterFromImage(buffer, contentType, {
+      quick: true,
+    });
 
     let image_url = product.image_url;
     if (isOssConfigured()) {
