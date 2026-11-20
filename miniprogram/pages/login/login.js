@@ -1,4 +1,5 @@
 const { loginWithWechat, sanitizeLoginRedirect } = require("../../utils/auth");
+const { bindDefaultShare } = require("../../utils/page-share");
 
 const NICKNAME_PREF_KEY = "samgo_nickname_pref";
 
@@ -17,7 +18,8 @@ function saveNicknamePref(nick) {
   } catch (_e) {}
 }
 
-Page({
+Page(
+  bindDefaultShare({
   data: {
     nickname: loadNicknamePref(),
     loading: false,
@@ -48,4 +50,5 @@ Page({
       });
     }
   },
-});
+  }),
+);

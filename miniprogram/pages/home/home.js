@@ -1,4 +1,5 @@
 const { clearSession, ensureValidSession, getSession } = require("../../utils/auth");
+const { bindDefaultShare } = require("../../utils/page-share");
 
 const NICKNAME_PREF_KEY = "samgo_nickname_pref";
 
@@ -17,7 +18,8 @@ function saveNicknamePref(nick) {
   } catch (_e) {}
 }
 
-Page({
+Page(
+  bindDefaultShare({
   data: {
     loggedIn: false,
     user: null,
@@ -75,4 +77,5 @@ Page({
       user: null,
     });
   },
-});
+  }),
+);

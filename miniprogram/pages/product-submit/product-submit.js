@@ -7,10 +7,12 @@ const {
 const { requestWithAuth, uploadWithAuth } = require("../../utils/api");
 const { getApiBase } = require("../../utils/get-api-base");
 const { compressImageForUpload } = require("../../utils/compress-image");
+const { bindDefaultShare } = require("../../utils/page-share");
 
 const CLIENT_BUILD = "1.0.8-compress";
 
-Page({
+Page(
+  bindDefaultShare({
   data: {
     imageUrl: "",
     pendingList: [],
@@ -269,4 +271,5 @@ Page({
       this.setData({ submitting: false });
     }
   },
-});
+  }),
+);

@@ -4,8 +4,16 @@ const PROD_API_BASE = "https://samgo.haylee.site";
 /** 开发者工具模拟器 + 本机 pnpm dev */
 const DEV_API_BASE = "http://127.0.0.1:3000";
 
+function isDevtoolsSimulator() {
+  try {
+    return wx.getSystemInfoSync().platform === "devtools";
+  } catch (_e) {
+    return false;
+  }
+}
+
 /**
- * @param {string} [forceBase] 非空则优先使用（如真机调试填电脑局域网 IP:3000）
+ * @param {string} [forceBase] 非空则优先使用（如真机连本机 Next：http://192.168.x.x:3000）
  */
 function resolveApiBase(forceBase) {
   const forced = (forceBase || "").trim().replace(/\/$/, "");
@@ -16,9 +24,8 @@ function resolveApiBase(forceBase) {
     envVersion = wx.getAccountInfoSync().miniProgram.envVersion;
   } catch (_e) {}
 
-  // 开发版（含开发者工具模拟器）：默认本机 Next；上传后的体验版/正式版走线上
-  // 手机扫「预览码」也是 develop，无法访问 127.0.0.1，请改用体验版或设 FORCE_API_BASE 为电脑局域网 IP
-  if (envVersion === "develop") {
+  // 仅「开发者工具模拟器」走本机；真机调试/预览虽也是 develop，手机访问不到 127.0.0.1
+  if (envVersion === "develop" && isDevtoolsSimulator()) {
     return DEV_API_BASE;
   }
 

@@ -4,6 +4,7 @@ const {
   CATALOG_DEFAULT_LIMIT,
   buildCatalogPath,
 } = require("../../utils/catalog-api");
+const { bindDefaultShare } = require("../../utils/page-share");
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -27,7 +28,8 @@ function countSelected(selectedIds) {
   return Object.keys(selectedIds || {}).filter((k) => selectedIds[k]).length;
 }
 
-Page({
+Page(
+  bindDefaultShare({
   data: {
     title: "",
     deliveryAddress: "",
@@ -286,4 +288,5 @@ Page({
         });
       });
   },
-});
+  }),
+);

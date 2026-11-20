@@ -3,6 +3,7 @@ const { requestWithAuth } = require("../../utils/api");
 const { rest } = require("../../utils/supabase");
 const { resolveOrderIdFromOptions } = require("../../utils/order-scene");
 const { buildCatalogPath } = require("../../utils/catalog-api");
+const { bindDefaultShare } = require("../../utils/page-share");
 
 const PENDING_ORDER_KEY = "samgo_pending_order_id";
 
@@ -107,7 +108,8 @@ function buildProductTotals(rows) {
   return { list, totalAmount: totalAmount.toFixed(2) };
 }
 
-Page({
+Page(
+  bindDefaultShare({
   data: {
     orderId: "",
     order: null,
@@ -500,6 +502,17 @@ Page({
     };
   },
 
+  onShareTimeline() {
+    const { orderId, order } = this.data;
+    return {
+      title:
+        order && order.title
+          ? `\u62fc\u5355\uff1a${order.title}`
+          : "SamGo \u62fc\u5355",
+      query: orderId ? `id=${orderId}` : "",
+    };
+  },
+
   async onShowWxacode() {
     if (this.data.wxacodeLoading) return;
     this.setData({ wxacodeVisible: true, wxacodeLoading: true, wxacodeSrc: "" });
@@ -554,4 +567,5 @@ Page({
       },
     });
   },
-});
+  }),
+);

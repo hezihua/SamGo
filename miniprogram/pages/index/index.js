@@ -6,6 +6,7 @@ const {
   loginPageUrl,
 } = require("../../utils/auth");
 const { requestWithAuth } = require("../../utils/api");
+const { bindDefaultShare } = require("../../utils/page-share");
 
 function decorateOrders(rows) {
   return (rows || []).map((o) => ({
@@ -35,7 +36,8 @@ function formatDeadlineShort(iso) {
   return s.length > 16 ? s.slice(0, 16) : s;
 }
 
-Page({
+Page(
+  bindDefaultShare({
   data: {
     user: null,
     orders: [],
@@ -120,4 +122,5 @@ Page({
   onPullDownRefresh() {
     this.loadOrders().finally(() => wx.stopPullDownRefresh());
   },
-});
+  }),
+);
