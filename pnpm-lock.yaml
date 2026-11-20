@@ -8,12 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@img/sharp-libvips-linux-x64':
-        specifier: 1.3.4
-        version: 1.3.4
-      '@img/sharp-linux-x64':
-        specifier: 0.35.5
-        version: 0.35.5
       '@supabase/supabase-js':
         specifier: ^2.108.2
         version: 2.112.4
@@ -2567,7 +2561,8 @@ snapshots:
   '@img/sharp-libvips-linux-x64@1.2.4':
     optional: true
 
-  '@img/sharp-libvips-linux-x64@1.3.4': {}
+  '@img/sharp-libvips-linux-x64@1.3.4':
+    optional: true
 
   '@img/sharp-libvips-linuxmusl-arm64@1.2.4':
     optional: true
@@ -2639,6 +2634,7 @@ snapshots:
   '@img/sharp-linux-x64@0.35.5':
     optionalDependencies:
       '@img/sharp-libvips-linux-x64': 1.3.4
+    optional: true
 
   '@img/sharp-linuxmusl-arm64@0.34.5':
     optionalDependencies:
