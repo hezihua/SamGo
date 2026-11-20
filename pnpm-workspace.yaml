@@ -10,3 +10,8 @@ supportedArchitectures:
   cpu:
     - current
     - x64
+
+onlyBuiltDependencies:
+  - sharp
+  - esbuild
+  - unrs-resolver
