@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import { loadSharp } from "@/lib/sharp-loader";
 
 const VISION_MAX_SIDE = 1600;
 
@@ -6,6 +6,7 @@ const VISION_MAX_SIDE = 1600;
 export async function preparePosterVisionImage(
   buffer: Buffer,
 ): Promise<{ buffer: Buffer; mime: string }> {
+  const sharp = await loadSharp();
   const img = sharp(buffer).rotate();
   const meta = await img.metadata();
   const w = meta.width ?? 0;
@@ -105,6 +106,7 @@ export async function cropPosterProductImage(
   buffer: Buffer,
   crop: NormalizedCrop,
 ): Promise<Buffer | null> {
+  const sharp = await loadSharp();
   const meta = await sharp(buffer).metadata();
   const imgW = meta.width;
   const imgH = meta.height;

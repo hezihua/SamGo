@@ -25,14 +25,24 @@ export function RecognizePosterButton({
     try {
       const res = await fetch(
         `/api/admin/submissions/${productId}/recognize-poster`,
-        { method: "POST" },
+        { method: "POST", credentials: "include" },
       );
-      const data = (await res.json()) as {
+      const raw = await res.text();
+      let data: {
         error?: string;
         duplicate_hints?: { name: string; price: number; reason: string }[];
-      };
+      } = {};
+      try {
+        data = raw ? (JSON.parse(raw) as typeof data) : {};
+      } catch {
+        throw new Error(
+          res.status >= 500
+            ? `服务端错误（HTTP ${res.status}），请查看 Vercel 日志后重试`
+            : `接口返回异常（HTTP ${res.status}）`,
+        );
+      }
       if (!res.ok) {
-        throw new Error(data.error || "识图失败");
+        throw new Error(data.error || `识图失败（HTTP ${res.status}）`);
       }
       if (data.duplicate_hints?.length) {
         const lines = data.duplicate_hints

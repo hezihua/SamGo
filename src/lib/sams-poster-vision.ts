@@ -1,11 +1,6 @@
 import { logVisionApiFailure } from "@/lib/ops-log";
 import { parseProductPayload, type ParsedProductFields } from "@/lib/product-fields";
-import {
-  fallbackSamsHeroCrop,
-  parseNormalizedCrop,
-  preparePosterVisionImage,
-  type NormalizedCrop,
-} from "@/lib/poster-product-crop";
+import type { NormalizedCrop } from "@/lib/poster-product-crop";
 
 const SAMS_POSTER_SYSTEM = `你是山姆会员店（Sam's Club 中国）微信小程序「分享海报」识别助手。
 用户会上传一张竖版促销海报图（含商品图、名称、规格、￥价格，底部常有小程序码）。
@@ -207,12 +202,18 @@ export function isPosterVisionConfigured(): boolean {
 
 export async function extractPosterFromImage(
   buffer: Buffer,
-  contentType: string,
+  _contentType: string,
 ): Promise<PosterExtractResult> {
   const cfg = visionConfig();
   if (!cfg) {
     throw new Error("未配置 OPENAI_API_KEY，无法识别海报");
   }
+
+  const {
+    preparePosterVisionImage,
+    parseNormalizedCrop,
+    fallbackSamsHeroCrop,
+  } = await import("@/lib/poster-product-crop");
 
   const prepared = await preparePosterVisionImage(buffer);
   const dataUrl = `data:${prepared.mime};base64,${prepared.buffer.toString("base64")}`;
@@ -227,7 +228,10 @@ export async function extractPosterFromImage(
     for (let attempt = 0; attempt < 2; attempt++) {
       const result = await callVisionChat(cfg, model, dataUrl);
       if (result.ok) {
-        return parseVisionText(result.text);
+        return parseVisionText(result.text, {
+          parseNormalizedCrop,
+          fallbackSamsHeroCrop,
+        });
       }
 
       lastError = formatVisionApiError(result.status, result.body);
@@ -243,7 +247,14 @@ export async function extractPosterFromImage(
   throw new Error(lastError);
 }
 
-function parseVisionText(text: string): PosterExtractResult {
+type CropHelpers = {
+  parseNormalizedCrop: (
+    value: unknown,
+  ) => import("@/lib/poster-product-crop").NormalizedCrop | null;
+  fallbackSamsHeroCrop: () => import("@/lib/poster-product-crop").NormalizedCrop;
+};
+
+function parseVisionText(text: string, crop: CropHelpers): PosterExtractResult {
   let raw: RawVisionJson;
   try {
     raw = JSON.parse(text) as RawVisionJson;
@@ -279,8 +290,8 @@ function parseVisionText(text: string): PosterExtractResult {
     throw new Error("未能从海报中识别出有效的商品名称与价格，请改用手动新增");
   }
 
-  const crop =
-    parseNormalizedCrop(raw.product_crop) ?? fallbackSamsHeroCrop();
+  const productCrop =
+    crop.parseNormalizedCrop(raw.product_crop) ?? crop.fallbackSamsHeroCrop();
 
-  return { product: parsed, crop };
+  return { product: parsed, crop: productCrop };
 }

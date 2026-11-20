@@ -42,12 +42,24 @@ export function BatchRecognizePending({
           `/api/admin/submissions/${id}/recognize-poster`,
           { method: "POST", credentials: "include" },
         );
-        const data = (await res.json()) as {
-          error?: string;
-          duplicate_hints?: { name: string }[];
-        };
+        const raw = await res.text();
+        let data: { error?: string; duplicate_hints?: { name: string }[] } =
+          {};
+        try {
+          data = raw ? (JSON.parse(raw) as typeof data) : {};
+        } catch {
+          const hint =
+            res.status === 504 || /timeout/i.test(raw)
+              ? "接口超时（识图较慢，请单条重试或检查 Vercel 函数时长）"
+              : `HTTP ${res.status}，非 JSON 响应`;
+          errors.push(`第 ${i + 1} 条：${hint}`);
+          if (i < productIds.length - 1) {
+            await sleep(BATCH_GAP_MS);
+          }
+          continue;
+        }
         if (!res.ok) {
-          errors.push(data.error || `第 ${i + 1} 条失败`);
+          errors.push(data.error || `第 ${i + 1} 条失败（HTTP ${res.status}）`);
         } else {
           ok += 1;
           if (data.duplicate_hints?.length) {
@@ -56,8 +68,14 @@ export function BatchRecognizePending({
             );
           }
         }
-      } catch {
-        errors.push(`第 ${i + 1} 条网络失败`);
+      } catch (e) {
+        const msg =
+          e instanceof TypeError && /fetch/i.test(e.message)
+            ? "无法连接服务端（检查网络或后台域名）"
+            : e instanceof Error
+              ? e.message
+              : "请求异常";
+        errors.push(`第 ${i + 1} 条：${msg}`);
       }
       if (i < productIds.length - 1) {
         await sleep(BATCH_GAP_MS);

@@ -12,6 +12,9 @@ import {
 import { suggestSearchAliases } from "@/lib/search-aliases";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+/** 下载海报 + 识图 + 裁切上传，耗时可能超过默认 10s */
+export const maxDuration = 60;
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 async function fetchPosterBuffer(
