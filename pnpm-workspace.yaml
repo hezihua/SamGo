@@ -1,3 +1,12 @@
-allowBuilds:
-  sharp: true
-  unrs-resolver: true
+packages:
+  - .
+
+nodeLinker: hoisted
+
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
