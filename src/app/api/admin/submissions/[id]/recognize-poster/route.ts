@@ -96,7 +96,11 @@ export async function POST(_request: Request, context: RouteContext) {
           "image/jpeg",
           "poster-product.jpg",
         );
+      } else {
+        image_url = poster_url || posterFetchUrl;
       }
+    } else {
+      image_url = poster_url || posterFetchUrl;
     }
 
     const duplicate_hints = await findSimilarProducts(

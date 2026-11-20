@@ -1,12 +1,29 @@
-import { loadSharp } from "@/lib/sharp-loader";
+import { tryLoadSharp } from "@/lib/sharp-loader";
 
 const VISION_MAX_SIDE = 1600;
 
 /** 缩小海报再送 Vision，降低 OpenRouter 上游失败/限流概率 */
+function guessImageMime(buffer: Buffer, fallback = "image/jpeg"): string {
+  if (buffer[0] === 0xff && buffer[1] === 0xd8) return "image/jpeg";
+  if (buffer[0] === 0x89 && buffer[1] === 0x50) return "image/png";
+  if (buffer[0] === 0x47 && buffer[1] === 0x49) return "image/gif";
+  if (buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45) {
+    return "image/webp";
+  }
+  return fallback;
+}
+
+/** 缩小海报再送 Vision；sharp 不可用时退回原图（Vercel 等环境） */
 export async function preparePosterVisionImage(
   buffer: Buffer,
+  contentType?: string,
 ): Promise<{ buffer: Buffer; mime: string }> {
-  const sharp = await loadSharp();
+  const sharp = await tryLoadSharp();
+  if (!sharp) {
+    const mime =
+      contentType?.split(";")[0]?.trim() || guessImageMime(buffer);
+    return { buffer, mime };
+  }
   const img = sharp(buffer).rotate();
   const meta = await img.metadata();
   const w = meta.width ?? 0;
@@ -106,7 +123,8 @@ export async function cropPosterProductImage(
   buffer: Buffer,
   crop: NormalizedCrop,
 ): Promise<Buffer | null> {
-  const sharp = await loadSharp();
+  const sharp = await tryLoadSharp();
+  if (!sharp) return null;
   const meta = await sharp(buffer).metadata();
   const imgW = meta.width;
   const imgH = meta.height;

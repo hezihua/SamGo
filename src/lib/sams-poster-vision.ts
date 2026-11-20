@@ -215,7 +215,7 @@ export async function extractPosterFromImage(
     fallbackSamsHeroCrop,
   } = await import("@/lib/poster-product-crop");
 
-  const prepared = await preparePosterVisionImage(buffer);
+  const prepared = await preparePosterVisionImage(buffer, _contentType);
   const dataUrl = `data:${prepared.mime};base64,${prepared.buffer.toString("base64")}`;
 
   const models = cfg.baseUrl.includes("openrouter.ai")
